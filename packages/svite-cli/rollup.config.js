@@ -9,7 +9,7 @@ const external = [].concat(
   Object.keys(process.binding("natives"))
 );
 
-const makeConfig = (input, outputDir) => ({
+const makeNodeConfig = (input, outputDir) => ({
   input: input,
   output: {
     dir: outputDir,
@@ -30,7 +30,28 @@ const makeConfig = (input, outputDir) => ({
   ]
 });
 
+const makeClientConfig = (input, outputDir) => ({
+  input: input,
+  output: {
+    dir: outputDir,
+    format: "esm",
+    sourcemap: true,
+    chunkFileNames: "[name].js"
+  },
+  plugins: [
+    json(),
+    resolve({
+      extensions: [".mjs", ".js", ".ts"]
+    }),
+    commonjs(),
+    sucrase({
+      transforms: ["typescript"]
+    })
+  ]
+});
+
 export default [
-  makeConfig("src/cli.ts", "dist"),
-  makeConfig(["src/scripts/start.ts"], "dist/scripts")
+  makeNodeConfig("src/cli.ts", "dist"),
+  makeNodeConfig(["src/scripts/start.ts"], "dist/scripts"),
+  makeClientConfig("src/DevClient.ts", "dist")
 ];

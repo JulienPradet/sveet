@@ -7,9 +7,11 @@
     "build": "rollup -c"
   },
   "dependencies": {
+    "common-tags": "^1.8.0",
     "cross-spawn": "^7.0.1",
     "fastify": "^2.11.0",
     "fastify-static": "^2.5.1",
+    "mkdirp": "^0.5.1",
     "rimraf": "^3.0.0",
     "rollup": "^1.27.13",
     "rollup-plugin-commonjs": "^10.1.0",

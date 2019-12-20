@@ -70,6 +70,11 @@ const DevServer = () => {
         server.listen(options.port || 3000);
         server.log.info(`server listening on ${server.server.address()}`);
       }
+    },
+    send: message => {
+      clients.forEach(client => {
+        client.res.write(`data: ${JSON.stringify(message)}\n\n`);
+      });
     }
   };
 };
