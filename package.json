@@ -1,0 +1,16 @@
+{
+  "name": "svite",
+  "version": "0.0.0",
+  "description": "Suite of tools for Svelte (UI kit, CLI, documentation, etc.)",
+  "main": "index.js",
+  "repository": "git@github.com:svite/svite.git",
+  "author": "Julien Pradet <julien.pradet@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/svite-cli",
+      "packages/svite-docs"
+    ]
+  }
+}

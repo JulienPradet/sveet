@@ -1,0 +1,10 @@
+{
+  "name": "svite-docs",
+  "version": "0.0.0",
+  "dependencies": {
+    "svite-cli": "0.0.0"
+  },
+  "scripts": {
+    "start": "svite-cli start"
+  }
+}
