@@ -1,6 +1,7 @@
 import { join } from "path";
 import rimraf from "rimraf";
 import { watch } from "rollup";
+import DevServer from "../DevServer";
 
 export const startCommandDefinition = prog => {
   return prog
@@ -15,11 +16,14 @@ export const startCommandDefinition = prog => {
 export const execute = opts => {
   const distDir = join(process.cwd(), "dist");
   rimraf(distDir, () => {
+    const devServer = DevServer();
+    devServer.listen({ port: opts.port });
+
     const watcher = watch([
       {
         input: join(process.cwd(), "./src/index.svelte"),
         output: {
-          dir: distDir,
+          dir: join(distDir, "static"),
           format: "esm"
         }
       }
