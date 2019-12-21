@@ -1,31 +1,34 @@
-import { readFile } from "fs";
-import { join } from "path";
-import { Server, IncomingMessage, ServerResponse } from "http";
-import fastify from "fastify";
-import fastifyStatic from "fastify-static";
+import { ServerResponse, IncomingMessage, createServer } from "http";
+import handleServe from "serve-handler";
 
 type ListenOptions = {
-  port?: number;
+  port: number;
 };
 
-const DevServer = () => {
+const DevServer = ({ staticDir }) => {
   let isListening: boolean = false;
-  const server: fastify.FastifyInstance<
-    Server,
-    IncomingMessage,
-    ServerResponse
-  > = fastify({});
+  let isReady: boolean = false;
+  const clients: Set<ServerResponse> = new Set();
+  let queue: Array<{ request: IncomingMessage; response: ServerResponse }> = [];
 
-  server.register(fastifyStatic, {
-    root: join(process.cwd(), "dist/static"),
-    prefix: "/static"
+  const server = createServer((request, response) => {
+    if (request.url === "/__svite") {
+      return handleSviteListener(request, response);
+    }
+
+    if (isReady) {
+      handleServe(request, response, {
+        public: staticDir,
+        cleanUrls: true
+      });
+    } else {
+      queue.push({ request, response });
+    }
   });
 
-  const clients: Set<fastify.FastifyReply<ServerResponse>> = new Set();
-
-  server.get("/__svite", (req, reply) => {
-    req.raw.socket.setKeepAlive(true);
-    reply.res.writeHead(200, {
+  const handleSviteListener = (request, response) => {
+    request.socket.setKeepAlive(true);
+    response.writeHead(200, {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Cache-Control",
       "Content-Type": "text/event-stream;charset=utf-8",
@@ -36,44 +39,34 @@ const DevServer = () => {
       "X-Accel-Buffering": "no"
     });
 
-    reply.res.write("\n");
+    response.write("\n");
 
-    clients.add(reply);
-    req.raw.on("close", () => {
-      clients.delete(reply);
+    clients.add(response);
+    request.on("close", () => {
+      clients.delete(response);
     });
-  });
-
-  server.get("/*", (req, reply) => {
-    reply.type("text/html");
-    return new Promise<String>((resolve, reject) => {
-      readFile(join(process.cwd(), "src/template.html"), (err, buffer) => {
-        if (err) {
-          return reject(err);
-        }
-
-        resolve(buffer.toString());
-      });
-    }).then(template => {
-      const html = template.replace(
-        "%svite.scripts%",
-        `<script src="/static/index.js"></script>`
-      );
-      reply.send(html);
-    });
-  });
+  };
 
   return {
-    listen: (options: ListenOptions) => {
+    listen: (options: ListenOptions, cb: () => void) => {
       if (!isListening) {
         isListening = true;
-        server.listen(options.port || 3000);
-        server.log.info(`server listening on ${server.server.address()}`);
+        server.listen(options.port, cb);
       }
+    },
+    ready: () => {
+      isReady = true;
+      queue.forEach(({ request, response }) => {
+        handleServe(request, response, {
+          public: staticDir,
+          cleanUrls: true
+        });
+      });
+      queue = [];
     },
     send: message => {
       clients.forEach(client => {
-        client.res.write(`data: ${JSON.stringify(message)}\n\n`);
+        client.write(`data: ${JSON.stringify(message)}\n\n`);
       });
     }
   };

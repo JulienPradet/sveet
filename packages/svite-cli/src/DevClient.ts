@@ -19,7 +19,7 @@ function connect() {
     const data = JSON.parse(event.data);
     if (!data) return; // just a heartbeat
 
-    if (data.action === "reload") {
+    if (["reload", "ready"].indexOf(data.action) > -1) {
       window.location.reload();
     }
   };

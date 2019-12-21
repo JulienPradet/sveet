@@ -3,10 +3,25 @@ import resolve from "rollup-plugin-node-resolve";
 import commonjs from "rollup-plugin-commonjs";
 import json from "rollup-plugin-json";
 import sucrase from "rollup-plugin-sucrase";
-import { stripIndent } from "common-tags";
-import { join } from "path";
-import { rm, writeFile } from "../utils/fs";
 import DevServer from "../DevServer";
+import { rm } from "../utils/fs";
+import { watch as watchEntry } from "../generators/entry";
+import { watch as watchTemplate } from "../generators/template";
+import { join } from "path";
+import { from, merge, of, Observable, zip } from "rxjs";
+import {
+  mergeMap,
+  distinctUntilChanged,
+  tap,
+  map,
+  share,
+  take,
+  filter,
+  startWith,
+  skipUntil,
+  bufferTime,
+  delay
+} from "rxjs/operators";
 
 export const startCommandDefinition = prog => {
   return prog
@@ -18,72 +33,154 @@ export const startCommandDefinition = prog => {
     });
 };
 
-const generateEntry = ({ entry }) => {
-  return new Promise((resolve, reject) => {
-    writeFile(
-      join(process.cwd(), "./.svite/index.ts"),
-      stripIndent`
-        import "svite-cli/dist/DevClient";
-        import "${entry}";
-      `
-    );
-    resolve();
+enum WatchEventEnum {
+  initialize = "initialize",
+  ready = "ready",
+  compile = "compile",
+  reload = "reload"
+}
+
+type WatchEvent = {
+  action: WatchEventEnum;
+};
+
+const watchBundle = options => {
+  return new Observable<WatchEvent>(observer => {
+    let ready = false;
+    const watcher = watch([
+      {
+        input: options.input,
+        output: {
+          dir: options.outputDir,
+          format: "esm"
+        },
+        plugins: [
+          json(),
+          resolve({
+            extensions: [".mjs", ".js", ".ts"]
+          }),
+          commonjs(),
+          sucrase({
+            transforms: ["typescript"]
+          })
+        ]
+      }
+    ]);
+
+    watcher.on("event", event => {
+      switch (event.code) {
+        case "START":
+          observer.next({
+            action: WatchEventEnum.compile
+          });
+          break;
+        case "END":
+          if (ready) {
+            observer.next({
+              action: WatchEventEnum.reload
+            });
+          } else {
+            ready = true;
+            observer.next({
+              action: WatchEventEnum.ready
+            });
+          }
+          break;
+        case "ERROR":
+          observer.error(event);
+          break;
+        case "FATAL":
+          observer.error(event);
+          break;
+      }
+    });
+
+    return () => watcher.close();
   });
 };
 
-export const execute = opts => {
-  const distDir = join(process.cwd(), "dist");
-  rm(distDir)
-    .then(() => {
-      return generateEntry({
-        entry: "../src/index.ts"
-      });
+const serve = ({ staticDir }) => events$ => {
+  const server = DevServer({ staticDir });
+
+  return events$.pipe(
+    tap(({ action }) => {
+      if (action === WatchEventEnum.initialize) {
+        server.listen({ port: 3000 }, () => {
+          console.log(`[Svite] server listening on port ${3000}`);
+        });
+      } else if (action === WatchEventEnum.ready) {
+        server.ready();
+      }
+
+      console.log(`[Svite] ${action}`);
+      server.send({ action });
     })
-    .then(() => {
-      const devServer = DevServer();
-      devServer.listen({ port: opts.port });
+  );
+};
 
-      const watcher = watch([
-        {
-          input: join(process.cwd(), "./.svite/index.ts"),
-          output: {
-            dir: join(distDir, "static"),
-            format: "esm"
+export const execute = options => {
+  return from(rm(join(process.cwd(), "build")))
+    .pipe(
+      mergeMap(() => {
+        const watchEntry$ = watchEntry(
+          {
+            output: join(process.cwd(), ".svite/index.js")
           },
-          plugins: [
-            json(),
-            resolve({
-              extensions: [".mjs", ".js", ".ts"]
-            }),
-            commonjs(),
-            sucrase({
-              transforms: ["typescript"]
-            })
-          ]
-        }
-      ]);
+          of({ entry: join("../src/index.ts") })
+        );
 
-      watcher.on("event", event => {
-        switch (event.code) {
-          case "START":
-            console.log("[Svite] Compiling...");
-            devServer.send({
-              action: "compile"
-            });
-            break;
-          case "END":
-            console.log("[Svite] Compiled successfully");
-            devServer.send({
-              action: "reload"
-            });
-            break;
-          case "ERROR":
-            console.error(event);
-            break;
-          case "FATAL":
-            console.error(event);
-            break;
-        }
-      });
-    });
+        const watchBundle$ = watchEntry$.pipe(
+          distinctUntilChanged(),
+          delay(5000),
+          mergeMap(entryPath =>
+            watchBundle({
+              input: entryPath,
+              outputDir: join(process.cwd(), "build/static")
+            })
+          ),
+          share()
+        );
+
+        const watchTemplate$ = watchTemplate(
+          {
+            templatePath: join(process.cwd(), "src/template.html"),
+            output: join(process.cwd(), "build/index.html")
+          },
+          of({ scripts: `<script src="/static/index.js"></script>` })
+        ).pipe(
+          map((_, index) => ({
+            action: index === 0 ? WatchEventEnum.ready : WatchEventEnum.reload
+          })),
+          share()
+        );
+
+        const ready$ = zip(
+          watchBundle$.pipe(
+            filter(({ action }) => action === WatchEventEnum.ready)
+          ),
+          watchTemplate$.pipe(
+            filter(({ action }) => action === WatchEventEnum.ready)
+          )
+        ).pipe(take(1));
+
+        return merge(
+          merge(watchBundle$, watchTemplate$).pipe(skipUntil(ready$))
+        ).pipe(
+          startWith({ action: WatchEventEnum.initialize }),
+          serve({
+            staticDir: join(process.cwd(), "build")
+          })
+        );
+      })
+    )
+    .subscribe(
+      () => {},
+      error => {
+        console.error(`[Svite] An unexpected error occurred.`);
+        console.error(error);
+      },
+      () => {
+        console.log(`[Svite] script completed successfully`);
+      }
+    );
 };

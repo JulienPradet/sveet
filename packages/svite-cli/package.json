@@ -7,10 +7,9 @@
     "build": "rollup -c"
   },
   "dependencies": {
+    "chokidar": "^3.3.1",
     "common-tags": "^1.8.0",
     "cross-spawn": "^7.0.1",
-    "fastify": "^2.11.0",
-    "fastify-static": "^2.5.1",
     "mkdirp": "^0.5.1",
     "rimraf": "^3.0.0",
     "rollup": "^1.27.13",
@@ -18,6 +17,8 @@
     "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-sucrase": "^2.1.0",
-    "sade": "^1.7.0"
+    "rxjs": "^6.5.3",
+    "sade": "^1.7.0",
+    "serve-handler": "^6.1.2"
   }
 }
