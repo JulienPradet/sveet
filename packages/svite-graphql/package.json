@@ -1,0 +1,24 @@
+{
+  "name": "svite-graphql",
+  "version": "0.0.0",
+  "scripts": {
+    "prebuild": "rm -rf dist index.js preprocess.js *.d.ts",
+    "build": "tsc --project ./tsconfig.json && tsc --declaration --strict index.ts preprocess.ts"
+  },
+  "dependencies": {
+    "@types/escodegen": "^0.0.6",
+    "acorn": "^7.1.0",
+    "escodegen": "^1.12.0",
+    "estree-walker": "^1.0.0",
+    "graphql": "^14.5.8",
+    "micro-graphql-react": "^0.4.0-beta16"
+  },
+  "peerDependencies": {
+    "svelte": "^3.16.5"
+  },
+  "main": "./src/index.ts",
+  "devDependencies": {
+    "svelte": "^3.16.5",
+    "typescript": "^3.7.4"
+  }
+}

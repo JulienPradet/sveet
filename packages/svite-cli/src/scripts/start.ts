@@ -22,6 +22,7 @@ import {
   startWith,
   skipUntil
 } from "rxjs/operators";
+import SviteGraphQLPreprocess from "svite-graphql/preprocess.js";
 import { Sade } from "sade";
 
 export const startCommandDefinition = (prog: Sade) => {
@@ -58,6 +59,7 @@ const watchBundle = (options: { input: string; outputDir: string }) => {
         plugins: [
           svelte({
             dev: true,
+            preprocess: [SviteGraphQLPreprocess()],
             css: (css: { write: (output: string) => void }) => {
               css.write(join(options.outputDir, "bundle.css"));
             }
