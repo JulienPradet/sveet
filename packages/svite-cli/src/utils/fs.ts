@@ -9,7 +9,7 @@ import { Observable, from } from "rxjs";
 import { mergeMap } from "rxjs/operators";
 import chokidar from "chokidar";
 
-export const rm = (path): Promise<string> => {
+export const rm = (path: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     rimraf(path, err => {
       if (err) {
@@ -21,7 +21,7 @@ export const rm = (path): Promise<string> => {
   });
 };
 
-export const mkdir = (path): Promise<string> => {
+export const mkdir = (path: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     mkdirp(path, err => {
       if (err) {
@@ -33,7 +33,7 @@ export const mkdir = (path): Promise<string> => {
   });
 };
 
-export const writeFile = (path, content): Promise<string> => {
+export const writeFile = (path: string, content: string): Promise<string> => {
   return mkdir(dirname(path)).then(() => {
     return new Promise((resolve, reject) => {
       originalWriteFile(path, content, err => {
@@ -46,7 +46,7 @@ export const writeFile = (path, content): Promise<string> => {
   });
 };
 
-export const readFile = (path: string) => {
+export const readFile = (path: string): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     originalReadFile(path, (err, content) => {
       if (err) {
@@ -67,7 +67,7 @@ type WatchEvent = {
   path: string;
   action: WatchEventEnum;
 };
-const watch$ = path => {
+const watch$ = (path: string) => {
   return new Observable<WatchEvent>(observer => {
     const watcher = chokidar.watch(path);
 
@@ -88,7 +88,7 @@ const watch$ = path => {
   });
 };
 
-export const readFile$ = path => {
+export const readFile$ = (path: string) => {
   return watch$(path).pipe(
     mergeMap(({ path, action }) => {
       if (action === WatchEventEnum.unlink) {

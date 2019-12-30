@@ -7,6 +7,11 @@
     "build": "rollup -c"
   },
   "dependencies": {
+    "@types/mkdirp": "^0.5.2",
+    "@types/rimraf": "^2.0.3",
+    "@types/rollup-plugin-json": "^3.0.2",
+    "@types/sade": "^1.6.0",
+    "@types/serve-handler": "^6.1.0",
     "chokidar": "^3.3.1",
     "common-tags": "^1.8.0",
     "cross-spawn": "^7.0.1",
@@ -17,8 +22,15 @@
     "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-sucrase": "^2.1.0",
+    "rollup-plugin-svelte": "^5.1.1",
     "rxjs": "^6.5.3",
     "sade": "^1.7.0",
     "serve-handler": "^6.1.2"
+  },
+  "peerDependencies": {
+    "svite-graphql": "0.0.0"
+  },
+  "devDependencies": {
+    "svelte": "^3.16.5"
   }
 }

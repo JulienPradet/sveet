@@ -11,17 +11,18 @@ type TemplateOptions = {
   output: string;
 };
 
-const transformTemplate = ({
-  scripts
-}: TransformTemplateOptions) => template => {
+const transformTemplate = ({ scripts }: TransformTemplateOptions) => (
+  template: string
+): string => {
   return template.replace("%svite.scripts%", scripts);
 };
 
 export const build = (
   options: TemplateOptions,
   transformOptions: TransformTemplateOptions
-) => {
+): Promise<string> => {
   return readFile(options.templatePath)
+    .then(buffer => buffer.toString())
     .then(transformTemplate(transformOptions))
     .then(template => writeFile(options.output, template));
 };
@@ -35,7 +36,7 @@ export const watch = (
   return combineLatest(
     template$,
     transformOptions$,
-    (templateBuffer, options) =>
+    (templateBuffer: Buffer, options) =>
       transformTemplate(options)(templateBuffer.toString())
   ).pipe(mergeMap(template => from(writeFile(options.output, template))));
 };

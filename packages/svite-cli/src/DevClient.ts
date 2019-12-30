@@ -1,4 +1,4 @@
-let source;
+let source: EventSource;
 
 function connect() {
   if (source || !window.EventSource) return;

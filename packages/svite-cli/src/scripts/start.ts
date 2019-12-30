@@ -3,12 +3,14 @@ import resolve from "rollup-plugin-node-resolve";
 import commonjs from "rollup-plugin-commonjs";
 import json from "rollup-plugin-json";
 import sucrase from "rollup-plugin-sucrase";
+import svelte from "rollup-plugin-svelte";
 import DevServer from "../DevServer";
 import { rm } from "../utils/fs";
 import { watch as watchEntry } from "../generators/entry";
 import { watch as watchTemplate } from "../generators/template";
+import { watch as watchRoutes } from "../generators/routes";
 import { join } from "path";
-import { from, merge, of, Observable, zip } from "rxjs";
+import { from, merge, of, Observable, zip, combineLatest } from "rxjs";
 import {
   mergeMap,
   distinctUntilChanged,
@@ -18,12 +20,11 @@ import {
   take,
   filter,
   startWith,
-  skipUntil,
-  bufferTime,
-  delay
+  skipUntil
 } from "rxjs/operators";
+import { Sade } from "sade";
 
-export const startCommandDefinition = prog => {
+export const startCommandDefinition = (prog: Sade) => {
   return prog
     .command("start")
     .describe("Launch developpment environment")
@@ -44,7 +45,7 @@ type WatchEvent = {
   action: WatchEventEnum;
 };
 
-const watchBundle = options => {
+const watchBundle = (options: { input: string; outputDir: string }) => {
   return new Observable<WatchEvent>(observer => {
     let ready = false;
     const watcher = watch([
@@ -55,14 +56,17 @@ const watchBundle = options => {
           format: "esm"
         },
         plugins: [
+          svelte({
+            dev: true,
+            css: (css: { write: (output: string) => void }) => {
+              css.write(join(options.outputDir, "bundle.css"));
+            }
+          }),
           json(),
           resolve({
-            extensions: [".mjs", ".js", ".ts"]
+            extensions: [".mjs", ".js"]
           }),
-          commonjs(),
-          sucrase({
-            transforms: ["typescript"]
-          })
+          commonjs()
         ]
       }
     ]);
@@ -99,7 +103,9 @@ const watchBundle = options => {
   });
 };
 
-const serve = ({ staticDir }) => events$ => {
+const serve = ({ staticDir }: { staticDir: string }) => (
+  events$: Observable<WatchEvent>
+) => {
   const server = DevServer({ staticDir });
 
   return events$.pipe(
@@ -118,7 +124,7 @@ const serve = ({ staticDir }) => events$ => {
   );
 };
 
-export const execute = options => {
+export const execute = () => {
   return from(rm(join(process.cwd(), "build")))
     .pipe(
       mergeMap(() => {
@@ -126,15 +132,22 @@ export const execute = options => {
           {
             output: join(process.cwd(), ".svite/index.js")
           },
-          of({ entry: join("../src/index.ts") })
+          of({ entry: join("../src/index.js") })
         );
 
-        const watchBundle$ = watchEntry$.pipe(
+        const watchRoutes$ = watchRoutes({
+          output: join(process.cwd(), ".svite/routes.js")
+        });
+
+        const watchBundle$ = combineLatest(
+          watchEntry$,
+          watchRoutes$,
+          (entry, routes) => ({ entry, routes })
+        ).pipe(
           distinctUntilChanged(),
-          delay(5000),
-          mergeMap(entryPath =>
+          mergeMap(({ entry, routes }) =>
             watchBundle({
-              input: entryPath,
+              input: entry,
               outputDir: join(process.cwd(), "build/static")
             })
           ),
@@ -146,7 +159,9 @@ export const execute = options => {
             templatePath: join(process.cwd(), "src/template.html"),
             output: join(process.cwd(), "build/index.html")
           },
-          of({ scripts: `<script src="/static/index.js"></script>` })
+          of({
+            scripts: `<script type="module" src="/static/index.js"></script>`
+          })
         ).pipe(
           map((_, index) => ({
             action: index === 0 ? WatchEventEnum.ready : WatchEventEnum.reload
