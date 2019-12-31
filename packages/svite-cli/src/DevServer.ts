@@ -44,6 +44,10 @@ const DevServer = ({
       });
     });
 
+  const client = new GraphQLClient({
+    uri: "https://swapi-graphql.netlify.com/.netlify/functions/index",
+    fetch: fetch
+  });
   const handleSviteData = (
     queryManager: QueryManager,
     request: Request,
@@ -51,11 +55,7 @@ const DevServer = ({
   ) => {
     const query = queryManager.getQuery(request.params.query) as string;
     const variables = JSON.parse(decodeURIComponent(request.params.variables));
-    const client = new GraphQLClient({
-      uri: "https://swapi-graphql.netlify.com/.netlify/functions/index",
-      fetch: fetch
-    });
-    return client.fetch({ query, variables }).then(data => {
+    return client.query(query, variables).then(data => {
       response.statusCode = 200;
       response.setHeader("Content-Type", "application/json");
       response.end(JSON.stringify(data));

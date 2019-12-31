@@ -36,6 +36,14 @@ class CacheClient<Query, Variables, Result> {
 
     return this;
   }
+
+  delete(query: Query, variables: Variables) {
+    const variablesKey = this.hashVariables(variables);
+    if (this.cache.has(query)) {
+      const queryCache = this.cache.get(query) as Map<string, Result>;
+      queryCache.delete(variablesKey);
+    }
+  }
 }
 
 export default CacheClient;

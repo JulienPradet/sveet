@@ -2,7 +2,7 @@ import CacheClient from "./Client";
 
 export type Query = string;
 export type Variables = object;
-type Result = object;
+export type Result = object;
 export type GraphQLClientOptions = {
   uri: string;
   fetch: any;
@@ -19,13 +19,17 @@ class GraphQLClient {
     this.cache = new CacheClient<Query, Variables, Result>();
   }
 
+  cleanCache(query: Query, variables: Variables) {
+    this.cache.delete(query, variables);
+  }
+
   fetch({
     query,
     variables
   }: {
     query: Query;
     variables: Variables;
-  }): Promise<object> {
+  }): Promise<Result> {
     return this.fetcher(this.uri, {
       method: "POST",
       headers: {
@@ -38,14 +42,15 @@ class GraphQLClient {
     }).then((response: Response) => response.json());
   }
 
-  query(query: Query, variables: Variables) {
+  query(query: Query, variables: Variables): Promise<Result> {
     const cachedData = this.cache.get(query, variables);
     if (cachedData) {
-      return cachedData;
+      return Promise.resolve(cachedData);
     }
 
     return this.fetch({ query: query, variables: variables }).then(result => {
       this.cache.set(query, variables, result);
+      setTimeout(() => this.cleanCache(query, variables), 5000);
       return result;
     });
   }
