@@ -1,5 +1,5 @@
 <script>
-  import { setGraphQLClient } from "svite-graphql/dist/context";
+  import { setStaticClient } from "svite-graphql/dist/context";
   import routes from "../.svite/routes";
   import page from "./modules/router";
 
@@ -8,9 +8,7 @@
     return route.path === $page.pathname;
   });
 
-  setGraphQLClient({
-    uri: "https://swapi-graphql.netlify.com/.netlify/functions/index"
-  });
+  setStaticClient();
 </script>
 
 {#await route.component()}

@@ -1,32 +1,71 @@
-import { ServerResponse, IncomingMessage, createServer } from "http";
+import { ServerResponse, IncomingMessage } from "http";
+import polka, { Request, NextHandler } from "polka";
 import handleServe from "serve-handler";
+import QueryManager from "svite-graphql/dist/QueryManager";
+import GraphQLClient from "svite-graphql/dist/GraphQLClient";
+import fetch from "node-fetch";
+import compression from "compression";
 
 type ListenOptions = {
   port: number;
 };
 
-const DevServer = ({ staticDir }) => {
+const DevServer = ({
+  staticDir,
+  queryManager
+}: {
+  staticDir: string;
+  queryManager: QueryManager;
+}) => {
   let isListening: boolean = false;
   let isReady: boolean = false;
   const clients: Set<ServerResponse> = new Set();
-  let queue: Array<{ request: IncomingMessage; response: ServerResponse }> = [];
+  let queue: NextHandler[] = [];
 
-  const server = createServer((request, response) => {
-    if (request.url === "/__svite") {
+  const server = polka<Request>()
+    .use((request, response, next) => {
+      if (isReady) {
+        next && next();
+      } else {
+        next && queue.push(next);
+      }
+    })
+    .use(compression())
+    .get("/__svite/livereload", (request, response) => {
       return handleSviteListener(request, response);
-    }
-
-    if (isReady) {
-      handleServe(request, response, {
+    })
+    .get("/__svite/data/:query/:variables.json", (request, response) => {
+      return handleSviteData(queryManager, request, response);
+    })
+    .get("*", (request, response) => {
+      return handleServe(request, response, {
         public: staticDir,
         cleanUrls: true
       });
-    } else {
-      queue.push({ request, response });
-    }
-  });
+    });
 
-  const handleSviteListener = (request, response) => {
+  const handleSviteData = (
+    queryManager: QueryManager,
+    request: Request,
+    response: ServerResponse
+  ) => {
+    const query = queryManager.getQuery(request.params.query) as string;
+    const variables = JSON.parse(decodeURIComponent(request.params.variables));
+    const client = new GraphQLClient({
+      uri: "https://swapi-graphql.netlify.com/.netlify/functions/index",
+      fetch: fetch
+    });
+    return client.fetch({ query, variables }).then(data => {
+      response.statusCode = 200;
+      response.setHeader("Content-Type", "application/json");
+      response.end(JSON.stringify(data));
+    });
+  };
+
+  const handleSviteListener = (
+    request: IncomingMessage,
+    response: ServerResponse
+  ) => {
     request.socket.setKeepAlive(true);
     response.writeHead(200, {
       "Access-Control-Allow-Origin": "*",
@@ -56,15 +95,12 @@ const DevServer = ({ staticDir }) => {
     },
     ready: () => {
       isReady = true;
-      queue.forEach(({ request, response }) => {
-        handleServe(request, response, {
-          public: staticDir,
-          cleanUrls: true
-        });
+      queue.forEach(next => {
+        next();
       });
       queue = [];
     },
-    send: message => {
+    send: (message: object) => {
       clients.forEach(client => {
         client.write(`data: ${JSON.stringify(message)}\n\n`);
       });

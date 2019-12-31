@@ -4,7 +4,7 @@ function connect() {
   if (source || !window.EventSource) return;
 
   source = new EventSource(
-    `http://${window.location.hostname}:${window.location.port}/__svite`
+    `http://${window.location.hostname}:${window.location.port}/__svite/livereload`
   );
 
   source.onopen = function(event) {

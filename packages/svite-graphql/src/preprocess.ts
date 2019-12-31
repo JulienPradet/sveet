@@ -14,6 +14,7 @@ import {
   OperationDefinitionNode,
   VariableDefinitionNode
 } from "graphql/language/ast";
+import QueryManager from "./QueryManager";
 
 const generateReplacement = (template: string) => {
   const replacement = (parse(template, {
@@ -38,7 +39,7 @@ const isGqlTag = (node: TaggedTemplateExpression): boolean => {
   return false;
 };
 
-export default () => {
+export default (queryManager: QueryManager) => {
   return {
     script: async ({
       content,
@@ -64,7 +65,7 @@ export default () => {
             if (importDeclaration.source.value === "svite-graphql") {
               this.replace(
                 generateReplacement(
-                  `import _query from "svite-graphql/dist/query";`
+                  `import _query from "svite-graphql/dist/staticQuery";`
                 )
               );
             }
@@ -73,7 +74,6 @@ export default () => {
           if (node.type === "TaggedTemplateExpression") {
             if (isGqlTag(node)) {
               const templateLiteral = node.quasi as TemplateLiteral;
-              console.log("templateLiteral");
               if (templateLiteral.quasis.length === 1) {
                 const query = generate(templateLiteral.quasis[0]);
                 const graphqlAst = graphqlParse(query);
@@ -86,22 +86,11 @@ export default () => {
                       return variableDefinition.variable.name.value;
                     }
                   );
-                  console.log(
-                    generateReplacement(`
-                  _query(
-                    \`${query}\`,
-                    ${
-                      variableNames.length > 0
-                        ? `{ ${variableNames.join(", ")} }`
-                        : ""
-                    }
-                  )
-                `)
-                  );
+                  const hash = queryManager.registerQuery(query);
                   this.replace(
                     generateReplacement(`
                       _query(
-                        \`${query}\`,
+                        \`${hash}\`,
                         ${
                           variableNames.length > 0
                             ? `{ ${variableNames.join(", ")} }`

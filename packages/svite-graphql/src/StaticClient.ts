@@ -5,37 +5,24 @@ export type Variables = object;
 type Result = object;
 export type GraphQLClientOptions = {
   uri: string;
-  fetch: any;
 };
 
 class GraphQLClient {
-  private uri: string;
   private cache: CacheClient<Query, Variables, Result>;
-  private fetcher: any;
 
-  constructor(options: GraphQLClientOptions) {
-    this.uri = options.uri;
-    this.fetcher = options.fetch;
+  constructor() {
     this.cache = new CacheClient<Query, Variables, Result>();
   }
 
-  fetch({
-    query,
-    variables
-  }: {
-    query: Query;
-    variables: Variables;
-  }): Promise<object> {
-    return this.fetcher(this.uri, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        query,
-        variables
-      })
-    }).then((response: Response) => response.json());
+  fetch({ query, variables }: { query: Query; variables: Variables }) {
+    return fetch(
+      `__svite/data/${query}/${encodeURIComponent(
+        JSON.stringify(variables)
+      )}.json`,
+      {
+        method: "GET"
+      }
+    ).then(response => response.json());
   }
 
   query(query: Query, variables: Variables) {

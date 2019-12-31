@@ -22,8 +22,9 @@ import {
   startWith,
   skipUntil
 } from "rxjs/operators";
-import SviteGraphQLPreprocess from "svite-graphql/preprocess.js";
+import SviteGraphQLPreprocess from "svite-graphql/dist/preprocess";
 import { Sade } from "sade";
+import QueryManager from "svite-graphql/dist/QueryManager";
 
 export const startCommandDefinition = (prog: Sade) => {
   return prog
@@ -39,14 +40,20 @@ enum WatchEventEnum {
   initialize = "initialize",
   ready = "ready",
   compile = "compile",
-  reload = "reload"
+  reload = "reload",
+  error = "error"
 }
 
 type WatchEvent = {
   action: WatchEventEnum;
+  payload?: any;
 };
 
-const watchBundle = (options: { input: string; outputDir: string }) => {
+const watchBundle = (options: {
+  input: string;
+  outputDir: string;
+  queryManager: QueryManager;
+}) => {
   return new Observable<WatchEvent>(observer => {
     let ready = false;
     const watcher = watch([
@@ -59,13 +66,14 @@ const watchBundle = (options: { input: string; outputDir: string }) => {
         plugins: [
           svelte({
             dev: true,
-            preprocess: [SviteGraphQLPreprocess()],
+            preprocess: [SviteGraphQLPreprocess(options.queryManager)],
             css: (css: { write: (output: string) => void }) => {
               css.write(join(options.outputDir, "bundle.css"));
             }
           }),
           json(),
           resolve({
+            preferBuiltins: true,
             extensions: [".mjs", ".js"]
           }),
           commonjs()
@@ -93,7 +101,10 @@ const watchBundle = (options: { input: string; outputDir: string }) => {
           }
           break;
         case "ERROR":
-          observer.error(event);
+          observer.next({
+            action: WatchEventEnum.error,
+            payload: event
+          });
           break;
         case "FATAL":
           observer.error(event);
@@ -105,10 +116,14 @@ const watchBundle = (options: { input: string; outputDir: string }) => {
   });
 };
 
-const serve = ({ staticDir }: { staticDir: string }) => (
-  events$: Observable<WatchEvent>
-) => {
-  const server = DevServer({ staticDir });
+const serve = ({
+  staticDir,
+  queryManager
+}: {
+  staticDir: string;
+  queryManager: QueryManager;
+}) => (events$: Observable<WatchEvent>) => {
+  const server = DevServer({ staticDir, queryManager });
 
   return events$.pipe(
     tap(({ action }) => {
@@ -130,6 +145,8 @@ export const execute = () => {
   return from(rm(join(process.cwd(), "build")))
     .pipe(
       mergeMap(() => {
+        const queryManager = new QueryManager();
+
         const watchEntry$ = watchEntry(
           {
             output: join(process.cwd(), ".svite/index.js")
@@ -150,13 +167,14 @@ export const execute = () => {
           mergeMap(({ entry, routes }) =>
             watchBundle({
               input: entry,
-              outputDir: join(process.cwd(), "build/static")
+              outputDir: join(process.cwd(), "build/static"),
+              queryManager
             })
           ),
           share()
         );
 
-        const watchTemplate$ = watchTemplate(
+        const watchTemplate$: Observable<WatchEvent> = watchTemplate(
           {
             templatePath: join(process.cwd(), "src/template.html"),
             output: join(process.cwd(), "build/index.html")
@@ -181,11 +199,19 @@ export const execute = () => {
         ).pipe(take(1));
 
         return merge(
-          merge(watchBundle$, watchTemplate$).pipe(skipUntil(ready$))
+          merge(watchBundle$, watchTemplate$).pipe(
+            tap(({ action, payload }) => {
+              if (action === WatchEventEnum.error) {
+                console.error(`[Svite] ERROR`, payload);
+              }
+            }),
+            skipUntil(ready$)
+          )
         ).pipe(
           startWith({ action: WatchEventEnum.initialize }),
           serve({
-            staticDir: join(process.cwd(), "build")
+            staticDir: join(process.cwd(), "build"),
+            queryManager: queryManager
           })
         );
       })
