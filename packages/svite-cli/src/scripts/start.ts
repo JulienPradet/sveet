@@ -24,7 +24,7 @@ import {
 import SviteGraphQLPreprocess from "../graphql/preprocess";
 import QueryManager from "../graphql/QueryManager";
 import { Sade } from "sade";
-import QueryManager from "svite-graphql/dist/QueryManager";
+import renderer from "../renderer";
 
 export const startCommandDefinition = (prog: Sade) => {
   return prog
@@ -80,6 +80,36 @@ const watchBundle = (options: {
             preferBuiltins: true,
             extensions: [".mjs", ".js"]
           }),
+          commonjs()
+        ]
+      },
+      {
+        input: options.ssr.input,
+        output: {
+          dir: options.ssr.outputDir,
+          format: "commonjs"
+        },
+        external: [
+          ...Object.keys(
+            require(join(process.cwd(), "package.json")).dependencies
+          ),
+          ...Object.keys((process as any).binding("natives"))
+        ],
+        plugins: [
+          svelte({
+            generate: "ssr",
+            dev: true,
+            preprocess: [SviteGraphQLPreprocess(options.queryManager)],
+            css: (css: { write: (output: string) => void }) => {
+              css.write(join(options.outputDir, "bundle.css"));
+            }
+          }),
+          json(),
+          resolve({
+            preferBuiltins: true,
+            extensions: [".mjs", ".js"]
+          }),
+
           commonjs()
         ]
       }
@@ -175,7 +205,11 @@ export const execute = () => {
             watchBundle({
               input: entry,
               outputDir: join(process.cwd(), "build/static"),
-              queryManager
+              queryManager,
+              ssr: {
+                input: join(process.cwd(), "src/ssr.js"),
+                outputDir: join(process.cwd(), "build/server")
+              }
             })
           ),
           share()
@@ -212,7 +246,27 @@ export const execute = () => {
                 console.error(`[Svite] ERROR`, payload);
               }
             }),
-            skipUntil(ready$)
+            skipUntil(ready$),
+            tap(({ action, payload }) => {
+              if (action === "ready" || action === "reload") {
+                const render = renderer(
+                  join(process.cwd(), "build/server/ssr.js")
+                );
+
+                try {
+                  render({
+                    initialPage: {
+                      pathname: "/",
+                      state: null
+                    }
+                  }).then(route => {
+                    console.log(route);
+                  });
+                } catch (e) {
+                  console.error(e);
+                }
+              }
+            })
           )
         ).pipe(
           startWith({ action: WatchEventEnum.initialize }),
