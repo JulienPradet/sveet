@@ -2,7 +2,6 @@ import { watch } from "rollup";
 import resolve from "rollup-plugin-node-resolve";
 import commonjs from "rollup-plugin-commonjs";
 import json from "rollup-plugin-json";
-import sucrase from "rollup-plugin-sucrase";
 import svelte from "rollup-plugin-svelte";
 import DevServer from "../DevServer";
 import { rm } from "../utils/fs";
@@ -22,7 +21,8 @@ import {
   startWith,
   skipUntil
 } from "rxjs/operators";
-import SviteGraphQLPreprocess from "svite-graphql/dist/preprocess";
+import SviteGraphQLPreprocess from "../graphql/preprocess";
+import QueryManager from "../graphql/QueryManager";
 import { Sade } from "sade";
 import QueryManager from "svite-graphql/dist/QueryManager";
 
@@ -53,6 +53,10 @@ const watchBundle = (options: {
   input: string;
   outputDir: string;
   queryManager: QueryManager;
+  ssr: {
+    input: string;
+    outputDir: string;
+  };
 }) => {
   return new Observable<WatchEvent>(observer => {
     let ready = false;
@@ -123,7 +127,10 @@ const serve = ({
   staticDir: string;
   queryManager: QueryManager;
 }) => (events$: Observable<WatchEvent>) => {
-  const server = DevServer({ staticDir, queryManager });
+  const server = DevServer({
+    staticDir,
+    queryManager
+  });
 
   return events$.pipe(
     tap(({ action }) => {

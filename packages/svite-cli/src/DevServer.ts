@@ -1,8 +1,8 @@
 import { ServerResponse, IncomingMessage } from "http";
 import polka, { Request, NextHandler } from "polka";
 import handleServe from "serve-handler";
-import QueryManager from "svite-graphql/dist/QueryManager";
-import GraphQLClient from "svite-graphql/dist/GraphQLClient";
+import QueryManager from "./graphql/QueryManager";
+import GraphQLClient from "./graphql/GraphQLClient";
 import fetch from "node-fetch";
 import compression from "compression";
 

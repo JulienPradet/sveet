@@ -72,8 +72,9 @@ export default (queryManager: QueryManager) => {
           }
 
           if (node.type === "TaggedTemplateExpression") {
-            if (isGqlTag(node)) {
-              const templateLiteral = node.quasi as TemplateLiteral;
+            const tag = node as TaggedTemplateExpression;
+            if (isGqlTag(tag)) {
+              const templateLiteral = tag.quasi as TemplateLiteral;
               if (templateLiteral.quasis.length === 1) {
                 const query = generate(templateLiteral.quasis[0]);
                 const graphqlAst = graphqlParse(query);

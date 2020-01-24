@@ -23,7 +23,7 @@ export const watch = (options: RoutesOptions): Observable<Array<Route>> => {
       filepath: join(process.cwd(), "src/routes/index.svelte")
     },
     {
-      path: "/",
+      path: "/:slug",
       params: {
         slug: "string"
       },

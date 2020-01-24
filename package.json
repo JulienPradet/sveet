@@ -10,7 +10,6 @@
   "workspaces": {
     "packages": [
       "packages/svite-cli",
-      "packages/svite-graphql",
       "packages/svite-docs"
     ]
   }

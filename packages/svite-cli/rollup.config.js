@@ -1,7 +1,7 @@
 import resolve from "rollup-plugin-node-resolve";
 import commonjs from "rollup-plugin-commonjs";
 import json from "rollup-plugin-json";
-import sucrase from "rollup-plugin-sucrase";
+import typescript from "@rollup/plugin-typescript";
 import pkg from "./package.json";
 
 const external = [].concat(
@@ -24,9 +24,7 @@ const makeNodeConfig = (input, outputDir) => ({
       extensions: [".mjs", ".js", ".ts"]
     }),
     commonjs(),
-    sucrase({
-      transforms: ["typescript"]
-    })
+    typescript()
   ]
 });
 
@@ -44,14 +42,13 @@ const makeClientConfig = (input, outputDir) => ({
       extensions: [".mjs", ".js", ".ts"]
     }),
     commonjs(),
-    sucrase({
-      transforms: ["typescript"]
-    })
+    typescript()
   ]
 });
 
 export default [
   makeNodeConfig("src/cli.ts", "dist"),
   makeNodeConfig(["src/scripts/start.ts"], "dist/scripts"),
-  makeClientConfig("src/DevClient.ts", "dist")
+  makeClientConfig("src/DevClient.ts", "dist"),
+  makeClientConfig("graphql.ts", ".")
 ];

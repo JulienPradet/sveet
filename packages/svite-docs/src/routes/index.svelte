@@ -1,5 +1,5 @@
 <script context="module">
-  import { gql } from "svite-graphql";
+  import { gql } from "svite-cli/graphql";
 
   const query = async (after, first) => {
     return gql({ after, first })`
@@ -16,7 +16,7 @@
   };
 
   export const preload = async page => {
-    return query({ after: "YXJyYXljb25uZWN0aW9uOjE=", first: 3 });
+    return query("YXJyYXljb25uZWN0aW9uOjE=", 3);
   };
 </script>
 

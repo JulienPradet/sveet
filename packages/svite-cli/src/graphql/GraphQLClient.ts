@@ -1,4 +1,4 @@
-import CacheClient from "./Client";
+import CacheClient from "./CacheClient";
 
 export type Query = string;
 export type Variables = object;
