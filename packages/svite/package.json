@@ -36,6 +36,7 @@
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-output-manifest": "^1.0.2",
     "rollup-plugin-sucrase": "^2.1.0",
     "rollup-plugin-svelte": "^5.1.1",
     "rxjs": "^6.5.3",

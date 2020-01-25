@@ -698,6 +698,13 @@ rollup-plugin-node-resolve@^5.2.0:
     resolve "^1.11.1"
     rollup-pluginutils "^2.8.1"
 
+rollup-plugin-output-manifest@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/rollup-plugin-output-manifest/-/rollup-plugin-output-manifest-1.0.2.tgz#fcaf19378212d1c5caa42974147f3319b2604aaa"
+  integrity sha512-vRZamZW60hJnnFFSF3ycFwPnsiGlTiUHg9dWfGFBXOA9tstKTyG7ZheD4pHA1NFgK/uHG099cmSzZ9LgG8lOiQ==
+  dependencies:
+    tslib "^1.10.0"
+
 rollup-plugin-sucrase@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/rollup-plugin-sucrase/-/rollup-plugin-sucrase-2.1.0.tgz#4c5e1e3b002050bad64b44890b0c2959f3efe35b"

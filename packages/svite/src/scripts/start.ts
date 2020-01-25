@@ -11,7 +11,7 @@ import {
   watch as watchTemplate
 } from "../generators/template";
 import { watch as watchRoutes } from "../generators/routes";
-import { join } from "path";
+import { join, relative } from "path";
 import { from, merge, of, Observable, zip, combineLatest, concat } from "rxjs";
 import {
   scan,
@@ -30,7 +30,7 @@ import SviteGraphQLPreprocess from "../graphql/preprocess";
 import QueryManager from "../graphql/QueryManager";
 import { Sade } from "sade";
 import renderer, { Renderer } from "../renderer";
-import { SsrStaticClient } from "../graphql/SsrStaticClient";
+import outputManifest from "rollup-plugin-output-manifest";
 
 export const startCommandDefinition = (prog: Sade) => {
   return prog
@@ -72,30 +72,49 @@ const watchBundle = (options: {
         input: options.input,
         output: {
           dir: options.outputDir,
-          format: "esm"
+          format: "esm",
+          sourcemap: true,
+          chunkFileNames: "[name].js"
         },
         plugins: [
           svelte({
             hydratable: true,
             dev: true,
-            preprocess: [SviteGraphQLPreprocess(options.queryManager)],
-            css: (css: { write: (output: string) => void }) => {
-              css.write(join(options.outputDir, "bundle.css"));
-            }
+            preprocess: [SviteGraphQLPreprocess(options.queryManager)]
           }),
           json(),
           resolve({
             preferBuiltins: true,
             extensions: [".mjs", ".js"]
           }),
-          commonjs()
+          commonjs(),
+          outputManifest({
+            fileName: "../manifest.json",
+            nameSuffix: "",
+            filter: chunk => Boolean(chunk.facadeModuleId),
+            generate: (keyValueDecorator, seed) => {
+              return chunks => {
+                return Object.values(chunks).reduce((manifest, chunk: any) => {
+                  const relativeFilePath = relative(
+                    join(process.cwd(), "src"),
+                    chunk.facadeModuleId
+                  );
+                  return {
+                    ...manifest,
+                    [relativeFilePath]: [chunk.fileName, ...chunk.imports]
+                  };
+                }, {});
+              };
+            }
+          })
         ]
       },
       {
         input: options.ssr.input,
         output: {
           dir: options.ssr.outputDir,
-          format: "commonjs"
+          format: "commonjs",
+          sourcemap: true
         },
         external: [
           ...Object.keys(
@@ -192,14 +211,16 @@ const serve = ({
             server.ready({
               renderer: renderer({
                 template: event.payload.template.toString(),
-                rendererPath: join(process.cwd(), "build/server/ssr.js")
+                rendererPath: join(process.cwd(), "build/server/ssr.js"),
+                manifestPath: join(process.cwd(), "build/manifest.json")
               })
             });
           } else if (event.action === WatchEventEnum.rendererUpdate) {
             server.setRenderer(
               renderer({
                 template: event.payload.template.toString(),
-                rendererPath: join(process.cwd(), "build/server/ssr.js")
+                rendererPath: join(process.cwd(), "build/server/ssr.js"),
+                manifestPath: join(process.cwd(), "build/manifest.json")
               })
             );
           }

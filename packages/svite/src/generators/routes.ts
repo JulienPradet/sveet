@@ -1,7 +1,7 @@
 import { from, Observable, of } from "rxjs";
 import { writeFile } from "../utils/fs";
 import { map, mergeMap } from "rxjs/operators";
-import { join } from "path";
+import { join, relative, extname } from "path";
 
 type RoutesOptions = {
   output: string;
@@ -16,6 +16,10 @@ type Route = {
 export const build = () => {};
 
 export const watch = (options: RoutesOptions): Observable<Array<Route>> => {
+  const getChunkName = (filepath: string) => {
+    return relative(join(process.cwd(), "./src"), filepath);
+  };
+
   return of([
     {
       path: "/",
@@ -37,7 +41,8 @@ export const watch = (options: RoutesOptions): Observable<Array<Route>> => {
             .map(
               route => `
               {
-                path: "/",
+                path: ${JSON.stringify(route.path)},
+                id: ${JSON.stringify(getChunkName(route.filepath))},
                 component: () => import("${route.filepath}").then((module) => {
                   return module.default
                 })

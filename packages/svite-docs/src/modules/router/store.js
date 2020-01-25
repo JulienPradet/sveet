@@ -23,18 +23,18 @@ const getRouteFromLocation = location => {
 //   });
 // };
 
-const preload = location => {
+const preload = async location => {
   const _location = ensureLocation(location);
   const route = getRouteFromLocation(_location);
   if (route) {
-    return route.component().then(component => {
-      route.resolvedComponent = component;
-      if (typeof component.preload === "function") {
-        component.preload(location);
-      }
-    });
+    const component = await route.component();
+    route.resolvedComponent = component;
+    if (typeof component.preload === "function") {
+      await component.preload(location);
+    }
+    return route;
   } else {
-    return Promise.resolve();
+    return null;
   }
 };
 

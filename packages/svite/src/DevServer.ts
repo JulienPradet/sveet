@@ -135,7 +135,6 @@ class DevServer {
     }
   }
   ready({ renderer }: { renderer: Renderer }) {
-    console.log("renderer");
     this.renderer = renderer;
     this.isReady = true;
     this.queue.forEach(next => {

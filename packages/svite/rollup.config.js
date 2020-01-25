@@ -7,7 +7,8 @@ import pkg from "./package.json";
 const external = [].concat(
   Object.keys(pkg.dependencies),
   Object.keys(pkg.peerDependencies),
-  Object.keys(process.binding("natives"))
+  Object.keys(process.binding("natives")),
+  ["rxjs/operators", "graphql/language/parser"]
 );
 
 const makeNodeConfig = (input, outputDir) => ({

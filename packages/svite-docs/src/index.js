@@ -1,16 +1,19 @@
+import { preload } from "./modules/router/store";
 import App from "./App.svelte";
 import { StaticClient } from "svite/graphql";
 
-const app = new App({
-  target: document.body,
-  hydrate: true,
-  props: {
-    initialPage: {
-      pathname: window.location.pathname,
-      state: window.history.state
-    },
-    staticClient: new StaticClient()
-  }
-});
+const initialPage = {
+  pathname: window.location.pathname,
+  state: window.history.state
+};
 
-export default app;
+preload(initialPage).then(() => {
+  new App({
+    target: document.getElementById("svite"),
+    hydrate: true,
+    props: {
+      initialPage: initialPage,
+      staticClient: new StaticClient()
+    }
+  });
+});
