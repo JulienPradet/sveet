@@ -7,7 +7,8 @@ import {
   Program,
   ImportDeclaration,
   TaggedTemplateExpression,
-  CallExpression
+  CallExpression,
+  ImportSpecifier
 } from "estree";
 import { parse as graphqlParse } from "graphql/language/parser";
 import {
@@ -62,12 +63,26 @@ export default (queryManager: QueryManager) => {
         enter(node, parent, prop, index) {
           if (node.type === "ImportDeclaration") {
             const importDeclaration = node as ImportDeclaration;
-            if (importDeclaration.source.value === "svite-graphql") {
-              this.replace(
-                generateReplacement(
-                  `import _query from "svite-graphql/dist/staticQuery";`
-                )
+            if (importDeclaration.source.value === "svite/graphql") {
+              const isGqlImport = importDeclaration.specifiers.some(
+                specifier => {
+                  if (specifier.type === "ImportSpecifier") {
+                    const importSpecifier = specifier as ImportSpecifier;
+                    const identifier = specifier.imported as Identifier;
+                    return identifier.name === "gql";
+                  } else {
+                    return false;
+                  }
+                }
               );
+
+              if (isGqlImport) {
+                this.replace(
+                  generateReplacement(
+                    `import { staticQuery as _svite_query } from "svite/graphql";`
+                  )
+                );
+              }
             }
           }
 
@@ -90,7 +105,7 @@ export default (queryManager: QueryManager) => {
                   const hash = queryManager.registerQuery(query);
                   this.replace(
                     generateReplacement(`
-                      _query(
+                      _svite_query(
                         \`${hash}\`,
                         ${
                           variableNames.length > 0

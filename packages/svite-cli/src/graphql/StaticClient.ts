@@ -7,22 +7,32 @@ export type GraphQLClientOptions = {
   uri: string;
 };
 
-class GraphQLClient {
+const originalFetch = (url: string, options: object) => fetch(url, options);
+
+class StaticClient {
+  private fetcher: any;
   private cache: CacheClient<Query, Variables, Result>;
 
-  constructor() {
+  constructor(options?: { fetch?: any }) {
     this.cache = new CacheClient<Query, Variables, Result>();
+    this.fetcher = (options && options.fetch) || originalFetch;
   }
 
-  fetch({ query, variables }: { query: Query; variables: Variables }) {
-    return fetch(
-      `__svite/data/${query}/${encodeURIComponent(
+  fetch({
+    query,
+    variables
+  }: {
+    query: Query;
+    variables: Variables;
+  }): Promise<Result> {
+    return this.fetcher(
+      `/__svite/data/${query}/${encodeURIComponent(
         JSON.stringify(variables)
       )}.json`,
       {
         method: "GET"
       }
-    ).then(response => response.json());
+    ).then((response: Response) => response.json());
   }
 
   query(query: Query, variables: Variables) {
@@ -38,4 +48,4 @@ class GraphQLClient {
   }
 }
 
-export default GraphQLClient;
+export { StaticClient };

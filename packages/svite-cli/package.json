@@ -8,9 +8,11 @@
   },
   "dependencies": {
     "@rollup/plugin-typescript": "^2.1.0",
+    "@types/common-tags": "^1.8.0",
     "@types/escodegen": "^0.0.6",
     "@types/hash-sum": "^1.0.0",
     "@types/mkdirp": "^0.5.2",
+    "@types/node-fetch": "^2.5.4",
     "@types/rimraf": "^2.0.3",
     "@types/rollup-plugin-json": "^3.0.2",
     "@types/sade": "^1.6.0",
@@ -23,9 +25,11 @@
     "cross-spawn": "^7.0.1",
     "escodegen": "^1.13.0",
     "estree-walker": "^1.0.1",
+    "graphql": "^14.5.8",
     "hash-sum": "^2.0.0",
     "isomorphic-unfetch": "^3.0.0",
     "mkdirp": "^0.5.1",
+    "node-fetch": "^2.6.0",
     "polka": "^0.5.2",
     "rimraf": "^3.0.0",
     "rollup": "^1.27.13",
@@ -36,7 +40,12 @@
     "rollup-plugin-svelte": "^5.1.1",
     "rxjs": "^6.5.3",
     "sade": "^1.7.0",
-    "serve-handler": "^6.1.2"
+    "serve-handler": "^6.1.2",
+    "tslib": "^1.10.0",
+    "typescript": "^3.7.5"
+  },
+  "peerDependencies": {
+    "svelte": "^3.16.5"
   },
   "devDependencies": {
     "svelte": "^3.16.5"

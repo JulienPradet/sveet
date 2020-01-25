@@ -6,6 +6,7 @@ import pkg from "./package.json";
 
 const external = [].concat(
   Object.keys(pkg.dependencies),
+  Object.keys(pkg.peerDependencies),
   Object.keys(process.binding("natives"))
 );
 
@@ -36,6 +37,7 @@ const makeClientConfig = (input, outputDir) => ({
     sourcemap: true,
     chunkFileNames: "[name].js"
   },
+  external,
   plugins: [
     json(),
     resolve({

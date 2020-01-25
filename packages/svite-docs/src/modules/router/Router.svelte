@@ -7,8 +7,14 @@
   let { route } = makeRouterStore(initialPage);
 </script>
 
-{#await $route.component()}
-  <div>Loading...</div>
-{:then component}
-  <svelte:component this={component} />
-{/await}
+{#if !$route}
+  <div>Not found.</div>
+{:else if $route.resolvedComponent}
+  <svelte:component this={$route.resolvedComponent} />
+{:else}
+  {#await $route.component()}
+    <div>Loading...</div>
+  {:then component}
+    <svelte:component this={component} />
+  {/await}
+{/if}

@@ -1,10 +1,11 @@
 <script>
-  import { setStaticClient } from "svite-graphql/dist/context";
+  import { setStaticClient } from "svite/graphql";
   import Router from "./modules/router/Router.svelte";
 
-  setStaticClient();
-
   export let initialPage;
+  export let staticClient;
+
+  setStaticClient(staticClient);
 </script>
 
 <Router {initialPage} />

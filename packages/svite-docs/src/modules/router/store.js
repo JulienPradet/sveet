@@ -28,6 +28,7 @@ const preload = location => {
   const route = getRouteFromLocation(_location);
   if (route) {
     return route.component().then(component => {
+      route.resolvedComponent = component;
       if (typeof component.preload === "function") {
         component.preload(location);
       }
@@ -41,13 +42,11 @@ const makeRouterStore = initialPage => {
   const page = writable(initialPage);
 
   const route = derived(page, $page => {
-    const route = routes.find(route => {
-      return route.path === $page.pathname;
-    });
+    const route = getRouteFromLocation($page);
     return route;
   });
 
   return { page, route };
 };
 
-export { makeRouterStore, goto, preload };
+export { makeRouterStore, preload };
