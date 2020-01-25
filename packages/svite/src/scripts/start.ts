@@ -1,18 +1,12 @@
-import { watch } from "rollup";
-import resolve from "rollup-plugin-node-resolve";
-import commonjs from "rollup-plugin-commonjs";
-import json from "rollup-plugin-json";
-import svelte from "rollup-plugin-svelte";
 import DevServer from "../DevServer";
 import { rm } from "../utils/fs";
+import { EventStatus, EventStatusEnum } from "../generators/EventStatus";
 import { watch as watchEntry } from "../generators/entry";
-import {
-  build as readTemplate,
-  watch as watchTemplate
-} from "../generators/template";
+import { watch as watchTemplate } from "../generators/template";
 import { watch as watchRoutes } from "../generators/routes";
-import { join, relative } from "path";
-import { from, merge, of, Observable, zip, combineLatest, concat } from "rxjs";
+import { watch as watchBundle } from "../generators/bundle";
+import { join } from "path";
+import { from, merge, of, Observable, zip, combineLatest } from "rxjs";
 import {
   scan,
   mergeMap,
@@ -26,11 +20,9 @@ import {
   skipUntil,
   skip
 } from "rxjs/operators";
-import SviteGraphQLPreprocess from "../graphql/preprocess";
 import QueryManager from "../graphql/QueryManager";
 import { Sade } from "sade";
-import renderer, { Renderer } from "../renderer";
-import outputManifest from "rollup-plugin-output-manifest";
+import renderer from "../renderer";
 
 export const startCommandDefinition = (prog: Sade) => {
   return prog
@@ -42,153 +34,16 @@ export const startCommandDefinition = (prog: Sade) => {
     });
 };
 
-enum WatchEventEnum {
-  initialize = "initialize",
-  ready = "ready",
-  compile = "compile",
-  reload = "reload",
-  error = "error",
-  rendererUpdate = "rendererUpdate"
-}
-
-type WatchEvent = {
-  action: WatchEventEnum;
-  payload?: any;
-};
-
-const watchBundle = (options: {
-  input: string;
-  outputDir: string;
-  queryManager: QueryManager;
-  ssr: {
-    input: string;
-    outputDir: string;
-  };
-}) => {
-  return new Observable<WatchEvent>(observer => {
-    let ready = false;
-    const watcher = watch([
-      {
-        input: options.input,
-        output: {
-          dir: options.outputDir,
-          format: "esm",
-          sourcemap: true,
-          chunkFileNames: "[name].js"
-        },
-        plugins: [
-          svelte({
-            hydratable: true,
-            dev: true,
-            preprocess: [SviteGraphQLPreprocess(options.queryManager)]
-          }),
-          json(),
-          resolve({
-            preferBuiltins: true,
-            extensions: [".mjs", ".js"]
-          }),
-          commonjs(),
-          outputManifest({
-            fileName: "../manifest.json",
-            nameSuffix: "",
-            filter: chunk => Boolean(chunk.facadeModuleId),
-            generate: (keyValueDecorator, seed) => {
-              return chunks => {
-                return Object.values(chunks).reduce((manifest, chunk: any) => {
-                  const relativeFilePath = relative(
-                    join(process.cwd(), "src"),
-                    chunk.facadeModuleId
-                  );
-                  return {
-                    ...manifest,
-                    [relativeFilePath]: [chunk.fileName, ...chunk.imports]
-                  };
-                }, {});
-              };
-            }
-          })
-        ]
-      },
-      {
-        input: options.ssr.input,
-        output: {
-          dir: options.ssr.outputDir,
-          format: "commonjs",
-          sourcemap: true
-        },
-        external: [
-          ...Object.keys(
-            require(join(process.cwd(), "package.json")).dependencies
-          ),
-          ...Object.keys(
-            require(join(__dirname, "../../package.json")).dependencies
-          ),
-          ...Object.keys((process as any).binding("natives"))
-        ].filter(packageName => packageName !== "svelte"),
-        plugins: [
-          svelte({
-            hydratable: true,
-            generate: "ssr",
-            dev: true,
-            preprocess: [SviteGraphQLPreprocess(options.queryManager)],
-            css: (css: { write: (output: string) => void }) => {
-              css.write(join(options.outputDir, "bundle.css"));
-            }
-          }),
-          json(),
-          resolve({
-            preferBuiltins: true,
-            extensions: [".mjs", ".js"]
-          }),
-
-          commonjs()
-        ]
-      }
-    ]);
-
-    watcher.on("event", event => {
-      switch (event.code) {
-        case "START":
-          observer.next({
-            action: WatchEventEnum.compile
-          });
-          break;
-        case "END":
-          if (ready) {
-            observer.next({
-              action: WatchEventEnum.reload
-            });
-          } else {
-            ready = true;
-            observer.next({
-              action: WatchEventEnum.ready
-            });
-          }
-          break;
-        case "ERROR":
-          observer.next({
-            action: WatchEventEnum.error,
-            payload: event
-          });
-          break;
-        case "FATAL":
-          observer.error(event);
-          break;
-      }
-    });
-
-    return () => watcher.close();
-  });
-};
-
 const serve = ({
   staticDir,
   queryManager,
-  events$
+  events$,
+  template$
 }: {
   staticDir: string;
   queryManager: QueryManager;
-  events$: Observable<WatchEvent>;
+  events$: Observable<EventStatus>;
+  template$: Observable<Buffer>;
 }) => {
   return events$.pipe(
     take(1),
@@ -205,20 +60,20 @@ const serve = ({
       return server;
     }),
     mergeMap(server => {
-      return events$.pipe(
-        scan((server: DevServer, event) => {
-          if (event.action === WatchEventEnum.ready) {
+      return combineLatest(template$, events$).pipe(
+        scan((server: DevServer, [template, event]) => {
+          if (event.action === EventStatusEnum.ready) {
             server.ready({
               renderer: renderer({
-                template: event.payload.template.toString(),
+                template: template.toString(),
                 rendererPath: join(process.cwd(), "build/server/ssr.js"),
                 manifestPath: join(process.cwd(), "build/manifest.json")
               })
             });
-          } else if (event.action === WatchEventEnum.rendererUpdate) {
+          } else if (event.action === EventStatusEnum.reload) {
             server.setRenderer(
               renderer({
-                template: event.payload.template.toString(),
+                template: template.toString(),
                 rendererPath: join(process.cwd(), "build/server/ssr.js"),
                 manifestPath: join(process.cwd(), "build/manifest.json")
               })
@@ -272,77 +127,50 @@ export const execute = () => {
           share()
         );
 
-        const watchTemplateEvent$: Observable<WatchEvent> = watchTemplate({
+        const template$ = watchTemplate({
           templatePath: join(process.cwd(), "src/template.html")
-        }).pipe(
-          mergeMap((template, index) =>
-            from(
-              index === 0
-                ? [
-                    {
-                      action: WatchEventEnum.ready,
-                      payload: {
-                        template: template
-                      }
-                    }
-                  ]
-                : [
-                    {
-                      action: WatchEventEnum.rendererUpdate,
-                      payload: {
-                        template: template
-                      }
-                    },
-                    {
-                      action: WatchEventEnum.reload
-                    }
-                  ]
-            )
-          ),
+        }).pipe(share());
+
+        const watchTemplateEvent$: Observable<EventStatus> = template$.pipe(
+          map((_, index) => ({
+            action: index === 0 ? EventStatusEnum.ready : EventStatusEnum.reload
+          })),
           share()
         );
 
         const ready$ = zip(
           watchBundle$.pipe(
-            filter(({ action }) => action === WatchEventEnum.ready)
+            filter(({ action }) => action === EventStatusEnum.ready)
           ),
           watchTemplateEvent$.pipe(
-            filter(({ action }) => action === WatchEventEnum.ready)
+            filter(({ action }) => action === EventStatusEnum.ready)
           )
         ).pipe(
           take(1),
-          map(([bundleEvent, templateEvent]) => ({
-            action: WatchEventEnum.ready,
-            payload: {
-              template: templateEvent.payload.template
-            }
+          map(() => ({
+            action: EventStatusEnum.ready
           })),
           share()
         );
 
-        const events$: Observable<WatchEvent> = merge(
+        const events$: Observable<EventStatus> = merge(
           ready$,
           merge(watchBundle$, watchTemplateEvent$).pipe(
             tap(({ action, payload }) => {
-              if (action === WatchEventEnum.error) {
+              if (action === EventStatusEnum.error) {
                 console.error(`[Svite] ERROR`, payload);
               }
             }),
             skipUntil(ready$),
             skip(1)
           )
-        ).pipe(
-          startWith({ action: WatchEventEnum.initialize }),
-          tap(event => {
-            console.log(event);
-          }),
-          share()
-        );
+        ).pipe(startWith({ action: EventStatusEnum.initialize }), share());
 
         return serve({
           staticDir: join(process.cwd(), "build"),
           queryManager: queryManager,
-          events$
+          events$,
+          template$
         });
       })
     )
