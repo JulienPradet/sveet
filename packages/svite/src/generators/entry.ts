@@ -12,7 +12,7 @@ type EntryOptions = {
 
 const makeEntry = ({ entry }: GenerateEntryOptions) => {
   return stripIndent`
-    import "svite-cli/dist/DevClient";
+    import "svite/dist/DevClient";
     import "${entry}";
   `;
 };

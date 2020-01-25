@@ -9,7 +9,7 @@
   "private": true,
   "workspaces": {
     "packages": [
-      "packages/svite-cli",
+      "packages/svite",
       "packages/svite-docs"
     ]
   }

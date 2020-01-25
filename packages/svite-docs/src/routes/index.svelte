@@ -1,5 +1,5 @@
 <script context="module">
-  import { gql } from "svite-cli/graphql";
+  import { gql } from "svite/graphql";
 
   const query = async (after, first) => {
     return gql({ after, first })`

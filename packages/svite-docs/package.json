@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "dependencies": {
     "svelte": "^3.16.5",
-    "svite-cli": "0.0.0"
+    "svite": "0.0.0"
   },
   "scripts": {
-    "start": "svite-cli start"
+    "start": "svite start"
   }
 }

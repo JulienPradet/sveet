@@ -1,5 +1,5 @@
 {
-  "name": "svite-cli",
+  "name": "svite",
   "version": "0.0.0",
   "bin": "./svite-cli",
   "scripts": {
