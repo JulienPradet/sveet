@@ -20,6 +20,7 @@ export default (options: RendererOptions): Renderer => {
         return options.template
           .replace("%svite.htmlAttributes%", `lang="en"`)
           .replace("%svite.head%", svelteResult.head)
+          .replace("%svite.styles%", svelteResult.css.code)
           .replace("%svite.content%", svelteResult.html)
           .replace(
             "%svite.scripts%",
