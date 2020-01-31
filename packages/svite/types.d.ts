@@ -1,6 +1,12 @@
 declare module "rollup-plugin-sucrase";
 declare module "rollup-plugin-svelte";
 
+declare namespace NodeJS {
+  interface Process {
+    browser: Boolean;
+  }
+}
+
 declare module "polka" {
   import { Server } from "net";
   import { IncomingMessage, ServerResponse } from "http";

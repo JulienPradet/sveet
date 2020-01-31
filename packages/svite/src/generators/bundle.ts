@@ -2,6 +2,7 @@ import { watch as rollupWatch } from "rollup";
 import resolve from "rollup-plugin-node-resolve";
 import commonjs from "rollup-plugin-commonjs";
 import json from "rollup-plugin-json";
+import replace from "rollup-plugin-replace";
 import svelte from "rollup-plugin-svelte";
 import outputManifest from "rollup-plugin-output-manifest";
 import { Observable } from "rxjs";
@@ -31,6 +32,10 @@ export const watch = (options: {
           chunkFileNames: "[name].js"
         },
         plugins: [
+          replace({
+            "process.browser": "true",
+            "process.env.NODE_ENV": JSON.stringify("development")
+          }),
           svelte({
             hydratable: true,
             dev: true,
@@ -80,6 +85,10 @@ export const watch = (options: {
           ...Object.keys((process as any).binding("natives"))
         ].filter(packageName => packageName !== "svelte"),
         plugins: [
+          replace({
+            "process.browser": "false",
+            "process.env.NODE_ENV": JSON.stringify("development")
+          }),
           svelte({
             generate: "ssr",
             dev: true,
