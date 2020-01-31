@@ -1,13 +1,11 @@
-import { getContext, setContext } from "svelte";
 import { StaticClient } from "./StaticClient";
 
-const CLIENT =
-  typeof Symbol !== "undefined" ? Symbol("svite-graphql") : "@@svite-graphql";
+let context: StaticClient;
 
 export function getStaticClient(): StaticClient {
-  return getContext(CLIENT);
+    return context;
 }
 
 export function setStaticClient(staticClient: StaticClient) {
-  setContext(CLIENT, staticClient);
+    context = staticClient;
 }

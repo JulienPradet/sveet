@@ -19,6 +19,7 @@ class DevServer {
   private clients: Set<ServerResponse> = new Set();
   private queue: NextHandler[] = [];
   private renderer?: Renderer;
+  private ssrStaticClient?: SsrStaticClient;
   private server: Polka<Request>;
 
   constructor({
@@ -68,7 +69,7 @@ class DevServer {
                     pathname: "/",
                     state: null
                   },
-                  staticClient: new SsrStaticClient()
+                  staticClient: this.ssrStaticClient
                 }).then(result => {
                   response.statusCode = 200;
                   response.setHeader("Content-Type", "text/html");
@@ -135,7 +136,7 @@ class DevServer {
     }
   }
   ready({ renderer }: { renderer: Renderer }) {
-    this.renderer = renderer;
+    this.setRenderer(renderer);
     this.isReady = true;
     this.queue.forEach(next => {
       next();
@@ -148,6 +149,7 @@ class DevServer {
     });
   }
   setRenderer(renderer: Renderer) {
+    this.ssrStaticClient = new SsrStaticClient();
     this.renderer = renderer;
   }
 }

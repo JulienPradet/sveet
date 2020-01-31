@@ -35,7 +35,7 @@ class StaticClient {
     ).then((response: Response) => response.json());
   }
 
-  query(query: Query, variables: Variables) {
+  query(query: Query, variables: Variables): Result | Promise<Result> {
     const cachedData = this.cache.get(query, variables);
     if (cachedData) {
       return cachedData;

@@ -43,9 +43,7 @@ export const watch = (options: RoutesOptions): Observable<Array<Route>> => {
               {
                 path: ${JSON.stringify(route.path)},
                 id: ${JSON.stringify(getChunkName(route.filepath))},
-                component: () => import("${route.filepath}").then((module) => {
-                  return module.default
-                })
+                component: () => import("${route.filepath}")
               }
             `
             )

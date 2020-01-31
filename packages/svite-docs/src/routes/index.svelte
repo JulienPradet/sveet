@@ -1,7 +1,7 @@
 <script context="module">
   import { gql } from "svite/graphql";
 
-  const query = async (after, first) => {
+  const query = (after, first) => {
     return gql({ after, first })`
       query FilmsList($after: String, $first: Int) {
         allFilms(after: $after, first: $first) {
@@ -15,7 +15,7 @@
     `;
   };
 
-  export const preload = async page => {
+  export const preload = page => {
     return query("YXJyYXljb25uZWN0aW9uOjE=", 3);
   };
 </script>
