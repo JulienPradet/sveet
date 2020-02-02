@@ -1,5 +1,5 @@
 import App from "./App.svelte";
-import { preload } from "./modules/router/store";
+import { preload } from "./modules/router";
 import { setStaticClient } from "svite/graphql";
 
 const getPreloadsFromRoute = (manifest, route) => {
@@ -39,7 +39,8 @@ const renderPreloads = preloads => {
 };
 
 export default ({ initialPage, staticClient }, manifest) => {
-  setStaticClient(staticClient);
+  let client = staticClient.clearCache();
+  setStaticClient(client);
 
   return preload(initialPage).then(route => {
     const result = App.render({
@@ -49,7 +50,7 @@ export default ({ initialPage, staticClient }, manifest) => {
 
     const preloads = concatPreloadsFrom(
       getPreloadsFromRoute(manifest, route),
-      staticClient.getPreloads()
+      client.getPreloads()
     );
 
     result.head = renderPreloads(preloads) + result.head;

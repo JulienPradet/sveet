@@ -8,8 +8,7 @@ type RoutesOptions = {
 };
 
 type Route = {
-  path: string;
-  params: object;
+  path: RegExp;
   filepath: string;
 };
 
@@ -22,15 +21,11 @@ export const watch = (options: RoutesOptions): Observable<Array<Route>> => {
 
   return of([
     {
-      path: "/",
-      params: {},
+      path: /^\/$/,
       filepath: join(process.cwd(), "src/routes/index.svelte")
     },
     {
-      path: "/:slug",
-      params: {
-        slug: "string"
-      },
+      path: new RegExp("^/(?<slug>[^?#]*)"),
       filepath: join(process.cwd(), "src/routes/[slug].svelte")
     }
   ] as Array<Route>).pipe(
@@ -41,7 +36,7 @@ export const watch = (options: RoutesOptions): Observable<Array<Route>> => {
             .map(
               route => `
               {
-                path: ${JSON.stringify(route.path)},
+                path: ${route.path.toString()},
                 id: ${JSON.stringify(getChunkName(route.filepath))},
                 component: () => import("${route.filepath}")
               }

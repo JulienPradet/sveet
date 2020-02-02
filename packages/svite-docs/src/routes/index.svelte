@@ -7,6 +7,7 @@
         allFilms(after: $after, first: $first) {
           edges {
             node {
+              id
               title
             }
           }
@@ -32,7 +33,9 @@
 {:then result}
   <ul>
     {#each result.data.allFilms.edges as article (article.node.id)}
-      <li>{article.node.title}</li>
+      <li>
+        <a href={`/${article.node.id}`}>{article.node.title}</a>
+      </li>
     {/each}
   </ul>
 {:catch error}

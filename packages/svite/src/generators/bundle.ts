@@ -86,6 +86,7 @@ export const watch = (options: {
         ].filter(packageName => packageName !== "svelte"),
         plugins: [
           replace({
+            window: "undefined",
             "process.browser": "false",
             "process.env.NODE_ENV": JSON.stringify("development")
           }),

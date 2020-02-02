@@ -20,6 +20,11 @@ class SsrStaticClient extends StaticClient {
     this.fetchedRequests = fetchedRequests;
   }
 
+  clearCache() {
+    this.fetchedRequests.clear();
+    return this;
+  }
+
   getPreloads() {
     return Array.from(this.fetchedRequests).map(url => {
       return {

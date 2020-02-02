@@ -31,7 +31,7 @@ class DevServer {
   }) {
     this.server = polka<Request>()
       .use((request, response, next) => {
-        if (this.isReady || !this.renderer) {
+        if (this.isReady) {
           next && next();
         } else {
           next && this.queue.push(next);
@@ -64,20 +64,27 @@ class DevServer {
               error
             ) => {
               if (error.statusCode === 404) {
-                (this.renderer as Renderer)({
+                return (this.renderer as Renderer)({
                   initialPage: {
-                    pathname: "/",
+                    pathname: request.path,
+                    search: request.search,
                     state: null
                   },
                   staticClient: this.ssrStaticClient
-                }).then(result => {
-                  response.statusCode = 200;
-                  response.setHeader("Content-Type", "text/html");
-                  response.end(result);
-                });
-                return Promise.resolve();
+                })
+                  .then(result => {
+                    response.statusCode = 200;
+                    response.setHeader("Content-Type", "text/html");
+                    response.end(result);
+                  })
+                  .catch(error => {
+                    response.statusCode = 500;
+                    response.end("Oops");
+                  });
               } else {
-                return Promise.reject(error);
+                response.statusCode = 500;
+                response.end("Oops");
+                return Promise.resolve();
               }
             }
           }
@@ -93,11 +100,16 @@ class DevServer {
       request: Request,
       response: ServerResponse
     ) => {
-      const query = queryManager.getQuery(request.params.query) as string;
+      const query = queryManager.getQuery(request.params.query);
+      if (typeof query === "undefined") {
+        response.statusCode = 404;
+        response.end("Query not found.");
+      }
+
       const variables = JSON.parse(
         decodeURIComponent(request.params.variables)
       );
-      return client.query(query, variables).then(data => {
+      return client.query(query as string, variables).then(data => {
         response.statusCode = 200;
         response.setHeader("Content-Type", "application/json");
         response.end(JSON.stringify(data));
