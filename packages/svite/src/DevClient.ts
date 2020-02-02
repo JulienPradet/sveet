@@ -7,12 +7,17 @@ function connect() {
     `http://${window.location.hostname}:${window.location.port}/__svite/livereload`
   );
 
+  let connected = false;
   source.onopen = function(event) {
+    connected = true;
     console.log(`[Svite] dev client connected`);
   };
 
   source.onerror = function(error) {
-    console.error(error);
+    if (connected) {
+      console.log(`[Svite] dev client disconnected`);
+      connected = false;
+    }
   };
 
   source.onmessage = function(event) {
