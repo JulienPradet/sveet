@@ -1,4 +1,4 @@
-import routes from "../../../.svite/routes";
+import routes from "../../../.sveet/routes";
 
 export const getRouteFromLocation = location => {
   const route = routes.find(route => {

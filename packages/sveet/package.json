@@ -1,7 +1,7 @@
 {
-  "name": "svite",
+  "name": "sveet",
   "version": "0.0.0",
-  "bin": "./svite-cli",
+  "bin": "./sveet-cli",
   "scripts": {
     "prebuild": "rm -rf dist graphql.d.ts graphql.js",
     "build": "rollup -c"

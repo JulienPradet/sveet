@@ -1,9 +1,9 @@
 import App from "./App.svelte";
 import { preload } from "./modules/router";
-import { setStaticClient } from "svite/graphql";
+import { setStaticClient } from "sveet/graphql";
 
 const getPreloadsFromRoute = (manifest, route) => {
-  const scripts = ["../.svite/index.js", route.id]
+  const scripts = ["../.sveet/index.js", route.id]
     .map(id => {
       return manifest[id].map(path => `/static/${path}`);
     })

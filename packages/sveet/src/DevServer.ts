@@ -38,11 +38,11 @@ class DevServer {
         }
       })
       .use(compression())
-      .get("/__svite/livereload", (request, response) => {
-        return handleSviteListener(request, response);
+      .get("/__sveet/livereload", (request, response) => {
+        return handleSveetListener(request, response);
       })
-      .get("/__svite/data/:query/:variables.json", (request, response) => {
-        return handleSviteData(queryManager, request, response);
+      .get("/__sveet/data/:query/:variables.json", (request, response) => {
+        return handleSveetData(queryManager, request, response);
       })
       .get("*", (request, response) => {
         return handleServe(
@@ -95,7 +95,7 @@ class DevServer {
       uri: "https://swapi-graphql.netlify.com/.netlify/functions/index",
       fetch: fetch
     });
-    const handleSviteData = (
+    const handleSveetData = (
       queryManager: QueryManager,
       request: Request,
       response: ServerResponse
@@ -116,7 +116,7 @@ class DevServer {
       });
     };
 
-    const handleSviteListener = (
+    const handleSveetListener = (
       request: IncomingMessage,
       response: ServerResponse
     ) => {

@@ -18,12 +18,12 @@ export default (options: RendererOptions): Renderer => {
     return renderer(props, manifest).then(
       (svelteResult: { html: string; head: string; css: { code: string } }) => {
         return options.template
-          .replace("%svite.htmlAttributes%", `lang="en"`)
-          .replace("%svite.head%", svelteResult.head)
-          .replace("%svite.styles%", svelteResult.css.code)
-          .replace("%svite.content%", svelteResult.html)
+          .replace("%sveet.htmlAttributes%", `lang="en"`)
+          .replace("%sveet.head%", svelteResult.head)
+          .replace("%sveet.styles%", svelteResult.css.code)
+          .replace("%sveet.content%", svelteResult.html)
           .replace(
-            "%svite.scripts%",
+            "%sveet.scripts%",
             `<script type="module" src="/static/index.js"></script>`
           );
       }

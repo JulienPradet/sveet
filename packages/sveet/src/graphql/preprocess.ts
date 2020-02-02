@@ -63,7 +63,7 @@ export default (queryManager: QueryManager) => {
         enter(node, parent, prop, index) {
           if (node.type === "ImportDeclaration") {
             const importDeclaration = node as ImportDeclaration;
-            if (importDeclaration.source.value === "svite/graphql") {
+            if (importDeclaration.source.value === "sveet/graphql") {
               const isGqlImport = importDeclaration.specifiers.some(
                 specifier => {
                   if (specifier.type === "ImportSpecifier") {
@@ -79,7 +79,7 @@ export default (queryManager: QueryManager) => {
               if (isGqlImport) {
                 this.replace(
                   generateReplacement(
-                    `import { staticQuery as _svite_query } from "svite/graphql";`
+                    `import { staticQuery as _sveet_query } from "sveet/graphql";`
                   )
                 );
               }
@@ -105,7 +105,7 @@ export default (queryManager: QueryManager) => {
                   const hash = queryManager.registerQuery(query);
                   this.replace(
                     generateReplacement(`
-                      _svite_query(
+                      _sveet_query(
                         \`${hash}\`,
                         ${
                           variableNames.length > 0

@@ -33,7 +33,7 @@ class StaticClient {
     }
 
     const request = this.fetcher(
-      `/__svite/data/${query}/${encodeURIComponent(
+      `/__sveet/data/${query}/${encodeURIComponent(
         JSON.stringify(variables)
       )}.json`,
       {

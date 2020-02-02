@@ -1,6 +1,6 @@
 import { preload } from "./modules/router";
 import App from "./App.svelte";
-import { StaticClient, setStaticClient } from "svite/graphql";
+import { StaticClient, setStaticClient } from "sveet/graphql";
 
 const initialPage = {
   pathname: window.location.pathname,
@@ -12,7 +12,7 @@ setStaticClient(staticClient);
 
 preload(initialPage).then(() => {
   new App({
-    target: document.getElementById("svite"),
+    target: document.getElementById("sveet"),
     hydrate: true,
     props: {
       initialPage: initialPage,

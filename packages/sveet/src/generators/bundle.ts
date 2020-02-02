@@ -7,7 +7,7 @@ import svelte from "rollup-plugin-svelte";
 import outputManifest from "rollup-plugin-output-manifest";
 import { Observable } from "rxjs";
 import { join, relative } from "path";
-import SviteGraphQLPreprocess from "../graphql/preprocess";
+import SveetGraphQLPreprocess from "../graphql/preprocess";
 import QueryManager from "../graphql/QueryManager";
 import { EventStatus, EventStatusEnum } from "./EventStatus";
 
@@ -39,7 +39,7 @@ export const watch = (options: {
           svelte({
             hydratable: true,
             dev: true,
-            preprocess: [SviteGraphQLPreprocess(options.queryManager)]
+            preprocess: [SveetGraphQLPreprocess(options.queryManager)]
           }),
           json(),
           resolve({
@@ -93,7 +93,7 @@ export const watch = (options: {
           svelte({
             generate: "ssr",
             dev: true,
-            preprocess: [SviteGraphQLPreprocess(options.queryManager)]
+            preprocess: [SveetGraphQLPreprocess(options.queryManager)]
           }),
           json(),
           resolve({

@@ -4,6 +4,6 @@ export { staticQuery } from "./src/graphql/staticQuery";
 
 export const gql = () => {
   throw new Error(
-    'This graphql tag should not be used. Please use "svite-graphql/preprocess" in your svelte configuration first.'
+    'This graphql tag should not be used. Please use "sveet-graphql/preprocess" in your svelte configuration first.'
   );
 };

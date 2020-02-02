@@ -3,7 +3,7 @@ import { startCommandDefinition } from "./scripts/start";
 
 const pkg = require("../package.json");
 
-const prog = sade("@svite/cli");
+const prog = sade("@sveet/cli");
 
 prog.version(pkg.version);
 

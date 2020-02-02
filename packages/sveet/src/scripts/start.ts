@@ -54,7 +54,7 @@ const serve = ({
       });
 
       server.listen({ host: "0.0.0.0", port: 3000 }, () => {
-        console.log(`[Svite] server listening on port ${3000}`);
+        console.log(`[Sveet] server listening on port ${3000}`);
       });
 
       return server;
@@ -80,7 +80,7 @@ const serve = ({
             );
           }
 
-          console.log(`[Svite] ${event.action}`);
+          console.log(`[Sveet] ${event.action}`);
           server.send({ action: event.action });
 
           return server;
@@ -98,13 +98,13 @@ export const execute = () => {
 
         const watchEntry$ = watchEntry(
           {
-            output: join(process.cwd(), ".svite/index.js")
+            output: join(process.cwd(), ".sveet/index.js")
           },
           of({ entry: join("../src/index.js") })
         );
 
         const watchRoutes$ = watchRoutes({
-          output: join(process.cwd(), ".svite/routes.js")
+          output: join(process.cwd(), ".sveet/routes.js")
         });
 
         const watchBundle$ = combineLatest(
@@ -158,7 +158,7 @@ export const execute = () => {
           merge(watchBundle$, watchTemplateEvent$).pipe(
             tap(({ action, payload }) => {
               if (action === EventStatusEnum.error) {
-                console.error(`[Svite] ERROR`, payload);
+                console.error(`[Sveet] ERROR`, payload);
               }
             }),
             skipUntil(ready$),
@@ -177,11 +177,11 @@ export const execute = () => {
     .subscribe(
       () => {},
       error => {
-        console.error(`[Svite] An unexpected error occurred.`);
+        console.error(`[Sveet] An unexpected error occurred.`);
         console.error(error);
       },
       () => {
-        console.log(`[Svite] script completed successfully`);
+        console.log(`[Sveet] script completed successfully`);
       }
     );
 };

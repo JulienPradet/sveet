@@ -1,5 +1,5 @@
 <script>
-  import { setStaticClient } from "svite/graphql";
+  import { setStaticClient } from "sveet/graphql";
   import Router from "./modules/router/Router.svelte";
 
   export let initialPage;

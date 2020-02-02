@@ -1,5 +1,5 @@
 <script context="module">
-  import { gql } from "svite/graphql";
+  import { gql } from "sveet/graphql";
 
   const query = id => {
     return gql({ id })`
