@@ -1,5 +1,5 @@
-import { readFile, readFile$, writeFile } from "../utils/fs";
-import { Observable, from, combineLatest } from "rxjs";
+import { readFile, readFile$ } from "../utils/fs";
+import { Observable } from "rxjs";
 
 type TemplateOptions = {
   templatePath: string;

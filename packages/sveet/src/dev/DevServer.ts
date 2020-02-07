@@ -1,12 +1,12 @@
 import { ServerResponse, IncomingMessage } from "http";
 import polka, { Polka, Request, NextHandler } from "polka";
 import handleServe from "serve-handler";
-import QueryManager from "./graphql/QueryManager";
-import GraphQLClient from "./graphql/GraphQLClient";
+import QueryManager from "../graphql/QueryManager";
+import GraphQLClient from "../graphql/GraphQLClient";
 import fetch from "node-fetch";
 import compression from "compression";
-import { Renderer } from "./renderer";
-import { SsrStaticClient } from "./graphql/SsrStaticClient";
+import { Renderer } from "../renderer";
+import { SsrStaticClient } from "../graphql/SsrStaticClient";
 
 type ListenOptions = {
   host: string;

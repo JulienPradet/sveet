@@ -51,7 +51,10 @@ const makeClientConfig = (input, outputDir) => ({
 
 export default [
   makeNodeConfig("src/cli.ts", "dist"),
-  makeNodeConfig(["src/scripts/start.ts"], "dist/scripts"),
+  makeNodeConfig(
+    ["src/scripts/start.ts", "src/scripts/build.ts"],
+    "dist/scripts"
+  ),
   makeClientConfig("src/DevClient.ts", "dist"),
   makeClientConfig("graphql.ts", ".")
 ];

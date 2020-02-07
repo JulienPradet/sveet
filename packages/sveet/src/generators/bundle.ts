@@ -9,7 +9,7 @@ import { Observable } from "rxjs";
 import { join, relative } from "path";
 import SveetGraphQLPreprocess from "../graphql/preprocess";
 import QueryManager from "../graphql/QueryManager";
-import { EventStatus, EventStatusEnum } from "./EventStatus";
+import { EventStatus } from "./EventStatus";
 
 export const watch = (options: {
   input: string;
@@ -109,25 +109,25 @@ export const watch = (options: {
       switch (event.code) {
         case "START":
           observer.next({
-            action: EventStatusEnum.compile
+            type: "CompileEvent"
           });
           break;
         case "END":
           if (ready) {
             observer.next({
-              action: EventStatusEnum.reload
+              type: "ReloadEvent"
             });
           } else {
             ready = true;
             observer.next({
-              action: EventStatusEnum.ready
+              type: "ReadyEvent"
             });
           }
           break;
         case "ERROR":
           observer.next({
-            action: EventStatusEnum.error,
-            payload: event
+            type: "ErrorEvent",
+            error: event
           });
           break;
         case "FATAL":

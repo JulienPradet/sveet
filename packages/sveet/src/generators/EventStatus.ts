@@ -1,13 +1,27 @@
-export enum EventStatusEnum {
-  initialize = "initialize",
-  ready = "ready",
-  compile = "compile",
-  reload = "reload",
-  error = "error",
-  rendererUpdate = "rendererUpdate"
-}
-
-export type EventStatus = {
-  action: EventStatusEnum;
-  payload?: any;
+export type ErrorEvent = {
+  type: "ErrorEvent";
+  error: Error;
 };
+
+export type InitializeEvent = {
+  type: "InitializeEvent";
+};
+
+export type ReadyEvent = {
+  type: "ReadyEvent";
+};
+
+export type CompileEvent = {
+  type: "CompileEvent";
+};
+
+export type ReloadEvent = {
+  type: "ReloadEvent";
+};
+
+export type EventStatus =
+  | ErrorEvent
+  | InitializeEvent
+  | ReadyEvent
+  | CompileEvent
+  | ReloadEvent;

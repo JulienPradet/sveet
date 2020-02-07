@@ -1,5 +1,5 @@
 import sade from "sade";
-import { startCommandDefinition } from "./scripts/start";
+import { commandDefinition as start } from "./scripts/start";
 
 const pkg = require("../package.json");
 
@@ -7,6 +7,6 @@ const prog = sade("@sveet/cli");
 
 prog.version(pkg.version);
 
-startCommandDefinition(prog);
+start(prog);
 
 prog.parse(process.argv);

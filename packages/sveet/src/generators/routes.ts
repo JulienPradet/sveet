@@ -1,7 +1,7 @@
 import { from, Observable, of } from "rxjs";
 import { writeFile } from "../utils/fs";
 import { map, mergeMap } from "rxjs/operators";
-import { join, relative, extname } from "path";
+import { join, relative } from "path";
 
 type RoutesOptions = {
   output: string;
@@ -35,12 +35,12 @@ export const watch = (options: RoutesOptions): Observable<Array<Route>> => {
           ${routes
             .map(
               route => `
-              {
-                path: ${route.path.toString()},
-                id: ${JSON.stringify(getChunkName(route.filepath))},
-                component: () => import("${route.filepath}")
-              }
-            `
+                {
+                  path: ${route.path.toString()},
+                  id: ${JSON.stringify(getChunkName(route.filepath))},
+                  component: () => import("${route.filepath}")
+                }
+              `
             )
             .join(",\n")}
         ]

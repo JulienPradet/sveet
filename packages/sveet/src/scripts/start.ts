@@ -1,6 +1,11 @@
-import DevServer from "../DevServer";
+import serve from "../dev/serve";
 import { rm } from "../utils/fs";
-import { EventStatus, EventStatusEnum } from "../generators/EventStatus";
+import {
+  EventStatus,
+  ReadyEvent,
+  ReloadEvent,
+  InitializeEvent
+} from "../generators/EventStatus";
 import { watch as watchEntry } from "../generators/entry";
 import { watch as watchTemplate } from "../generators/template";
 import { watch as watchRoutes } from "../generators/routes";
@@ -22,75 +27,27 @@ import {
 } from "rxjs/operators";
 import QueryManager from "../graphql/QueryManager";
 import { Sade } from "sade";
-import renderer from "../renderer";
+import Logger, { DefaultLogger } from "../utils/logger";
 
-export const startCommandDefinition = (prog: Sade) => {
+export const commandDefinition = (prog: Sade) => {
   return prog
     .command("start")
     .describe("Launch developpment environment")
     .action(opts => {
       const { execute } = require("./scripts/start.js");
-      execute(opts);
+      const logger = new DefaultLogger();
+      execute({
+        ...opts,
+        logger
+      });
     });
 };
 
-const serve = ({
-  staticDir,
-  queryManager,
-  events$,
-  template$
-}: {
-  staticDir: string;
-  queryManager: QueryManager;
-  events$: Observable<EventStatus>;
-  template$: Observable<Buffer>;
-}) => {
-  return events$.pipe(
-    take(1),
-    map(({ action, payload }) => {
-      const server = new DevServer({
-        staticDir,
-        queryManager
-      });
-
-      server.listen({ host: "0.0.0.0", port: 3000 }, () => {
-        console.log(`[Sveet] server listening on port ${3000}`);
-      });
-
-      return server;
-    }),
-    mergeMap(server => {
-      return combineLatest(template$, events$).pipe(
-        scan((server: DevServer, [template, event]) => {
-          if (event.action === EventStatusEnum.ready) {
-            server.ready({
-              renderer: renderer({
-                template: template.toString(),
-                rendererPath: join(process.cwd(), "build/server/ssr.js"),
-                manifestPath: join(process.cwd(), "build/manifest.json")
-              })
-            });
-          } else if (event.action === EventStatusEnum.reload) {
-            server.setRenderer(
-              renderer({
-                template: template.toString(),
-                rendererPath: join(process.cwd(), "build/server/ssr.js"),
-                manifestPath: join(process.cwd(), "build/manifest.json")
-              })
-            );
-          }
-
-          console.log(`[Sveet] ${event.action}`);
-          server.send({ action: event.action });
-
-          return server;
-        }, server)
-      );
-    })
-  );
+export type ExecuteOptions = {
+  logger: Logger;
 };
 
-export const execute = () => {
+export const execute = (opts: ExecuteOptions) => {
   return from(rm(join(process.cwd(), "build")))
     .pipe(
       mergeMap(() => {
@@ -132,41 +89,38 @@ export const execute = () => {
         }).pipe(share());
 
         const watchTemplateEvent$: Observable<EventStatus> = template$.pipe(
-          map((_, index) => ({
-            action: index === 0 ? EventStatusEnum.ready : EventStatusEnum.reload
-          })),
+          map((_, index) =>
+            index === 0
+              ? ({ type: "ReadyEvent" } as ReadyEvent)
+              : ({ type: "ReloadEvent" } as ReloadEvent)
+          ),
           share()
         );
 
         const ready$ = zip(
-          watchBundle$.pipe(
-            filter(({ action }) => action === EventStatusEnum.ready)
-          ),
-          watchTemplateEvent$.pipe(
-            filter(({ action }) => action === EventStatusEnum.ready)
-          )
+          watchBundle$.pipe(filter(({ type }) => type === "ReadyEvent")),
+          watchTemplateEvent$.pipe(filter(({ type }) => type === "ReadyEvent"))
         ).pipe(
           take(1),
-          map(() => ({
-            action: EventStatusEnum.ready
-          })),
+          map(() => ({ type: "ReadyEvent" } as ReadyEvent)),
           share()
         );
 
         const events$: Observable<EventStatus> = merge(
           ready$,
           merge(watchBundle$, watchTemplateEvent$).pipe(
-            tap(({ action, payload }) => {
-              if (action === EventStatusEnum.error) {
-                console.error(`[Sveet] ERROR`, payload);
-              }
-            }),
             skipUntil(ready$),
             skip(1)
           )
-        ).pipe(startWith({ action: EventStatusEnum.initialize }), share());
+        ).pipe(
+          startWith({
+            type: "InitializeEvent"
+          } as InitializeEvent),
+          share()
+        );
 
         return serve({
+          logger: opts.logger,
           staticDir: join(process.cwd(), "build"),
           queryManager: queryManager,
           events$,
@@ -176,12 +130,11 @@ export const execute = () => {
     )
     .subscribe(
       () => {},
-      error => {
-        console.error(`[Sveet] An unexpected error occurred.`);
-        console.error(error);
+      (error: Error) => {
+        opts.logger.error(`An unexpected error occurred.`, error);
       },
       () => {
-        console.log(`[Sveet] script completed successfully`);
+        opts.logger.log(`Script completed successfully`);
       }
     );
 };
