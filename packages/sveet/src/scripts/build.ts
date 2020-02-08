@@ -4,7 +4,7 @@ import { join } from "path";
 import { from, combineLatest } from "rxjs";
 import { rm } from "../utils/fs";
 import { mergeMap, share, tap, filter } from "rxjs/operators";
-import QueryManager from "../graphql/QueryManager";
+import QueryManager from "../query/QueryManager";
 import { build as buildEntry } from "../generators/entry";
 import { build as buildRoutes } from "../generators/routes";
 import { build as buildBundle } from "../generators/bundle";
@@ -12,7 +12,7 @@ import { build as buildTemplate } from "../generators/template";
 import { build as buildPages } from "../generators/pages";
 import Logger, { DefaultLogger } from "../utils/logger";
 import renderer from "../renderer";
-import GraphQLClient from "../graphql/GraphQLClient";
+import { SsrStaticClient } from "../query/SsrStaticClient";
 
 export const commandDefinition = (prog: Sade) => {
   return prog
@@ -37,6 +37,7 @@ export const execute = (opts: ExecuteOptions) => {
     .pipe(
       mergeMap(() => {
         const queryManager = new QueryManager();
+        const ssrStaticClient = new SsrStaticClient();
 
         const entry$ = buildEntry(
           {
@@ -84,11 +85,6 @@ export const execute = (opts: ExecuteOptions) => {
           templatePath: join(process.cwd(), "src/template.html")
         });
 
-        const client = new GraphQLClient({
-          uri: "https://swapi-graphql.netlify.com/.netlify/functions/index",
-          fetch: fetch
-        });
-
         return combineLatest(bundle$, template$).pipe(
           mergeMap(([bundle, template]) => {
             return buildPages({
@@ -97,8 +93,7 @@ export const execute = (opts: ExecuteOptions) => {
                 rendererPath: join(process.cwd(), "build/server/ssr.js"),
                 manifestPath: join(process.cwd(), "build/manifest.json")
               }),
-              queryManager: queryManager,
-              client: client
+              ssrStaticClient: ssrStaticClient
             });
           })
         );

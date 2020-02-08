@@ -12,8 +12,8 @@ import svelte from "rollup-plugin-svelte";
 import outputManifest from "rollup-plugin-output-manifest";
 import { Observable } from "rxjs";
 import { join, relative } from "path";
-import SveetGraphQLPreprocess from "../graphql/preprocess";
-import QueryManager from "../graphql/QueryManager";
+import SveetQueryPreprocess from "../query/preprocess";
+import QueryManager from "../query/QueryManager";
 import { EventStatus } from "./EventStatus";
 
 type ClientBundleOptions = {
@@ -50,7 +50,7 @@ const makeClientConfig = (
       svelte({
         hydratable: true,
         dev: true,
-        preprocess: [SveetGraphQLPreprocess(queryManager)]
+        preprocess: [SveetQueryPreprocess(queryManager, false)]
       }),
       json(),
       resolve({
@@ -108,7 +108,7 @@ const makeSsrConfig = (
       svelte({
         generate: "ssr",
         dev: true,
-        preprocess: [SveetGraphQLPreprocess(queryManager)]
+        preprocess: [SveetQueryPreprocess(queryManager, true)]
       }),
       json(),
       resolve({

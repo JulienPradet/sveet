@@ -1,32 +1,31 @@
 <script context="module">
-  import { gql } from "sveet/graphql";
+  import { fetch } from "sveet/query";
 
-  const query = id => {
-    return gql({ id })`
-      query FilmsList($id: ID!) {
-        film(id: $id) {
-          id
-          title
-        }
-      }
-    `;
+  export const staticQuery = async ({ id }) => {
+    const response = await fetch(`https://swapi.co/api/films/${id}`);
+    return await response.json();
   };
 
   export const preload = ({ location }) => {
-    return query(location.params.slug);
+    if (Number(location.params.slug)) {
+      return staticQuery({ id: location.params.slug });
+    }
   };
 </script>
 
 <script>
   export let location = null;
 
-  const film = location ? query(location.params.slug) : {};
+  const film =
+    location && Number(location.params.slug)
+      ? staticQuery({ id: location.params.slug })
+      : {};
 </script>
 
 {#await film}
   <p>Loading...</p>
 {:then result}
-  <p>Hi {result.data.film.title} !</p>
+  <p>Hi {result.title} !</p>
 {:catch error}
   <p>Film not found</p>
 {/await}

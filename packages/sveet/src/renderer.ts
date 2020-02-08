@@ -1,3 +1,6 @@
+import { SsrStaticClient } from "./query/SsrStaticClient";
+import { setStaticClient } from "./query/context";
+
 export type Manifest = object;
 export type Renderer = (props: object) => Promise<string>;
 
@@ -15,7 +18,7 @@ export default (options: RendererOptions): Renderer => {
   const renderer = require(options.rendererPath);
 
   return props => {
-    return renderer(props, manifest).then(
+    return renderer(props, { manifest }).then(
       (svelteResult: { html: string; head: string; css: { code: string } }) => {
         return options.template
           .replace("%sveet.htmlAttributes%", `lang="en"`)

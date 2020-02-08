@@ -1,25 +1,22 @@
 import renderer from "../renderer";
 import DevServer from "./DevServer";
-import QueryManager from "../graphql/QueryManager";
+import { SsrStaticClient } from "../query/SsrStaticClient";
 import { join } from "path";
 import { Observable } from "rxjs";
 import { EventStatus } from "../generators/EventStatus";
 import { take, map, mergeMap, scan, withLatestFrom } from "rxjs/operators";
 import Logger from "../utils/logger";
-import GraphQLClient from "../graphql/GraphQLClient";
 
 const serve = ({
   logger,
   staticDir,
-  queryManager,
-  client,
+  ssrStaticClient,
   events$,
   template$
 }: {
   logger: Logger;
   staticDir: string;
-  queryManager: QueryManager;
-  client: GraphQLClient;
+  ssrStaticClient: SsrStaticClient;
   events$: Observable<EventStatus>;
   template$: Observable<Buffer>;
 }) => {
@@ -28,8 +25,7 @@ const serve = ({
     map(() => {
       const server = new DevServer({
         staticDir,
-        queryManager,
-        client
+        ssrStaticClient
       });
 
       server.listen({ host: "0.0.0.0", port: 3000 }, () => {
@@ -63,9 +59,6 @@ const serve = ({
           switch (event.type) {
             case "CompileEvent":
               logger.log(`Change detected… Compiling…`);
-              break;
-            case "ErrorEvent":
-              logger.error(`Compilation failed.`, event.error);
               break;
             case "ReadyEvent":
               logger.log(

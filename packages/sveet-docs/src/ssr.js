@@ -1,6 +1,6 @@
 import App from "./App.svelte";
-import { preload } from "./modules/router";
-import { setStaticClient } from "sveet/graphql";
+import { preload, loadAllRoutes } from "./modules/router";
+import { setStaticClient } from "sveet/query";
 
 const getPreloadsFromRoute = (manifest, route) => {
   const scripts = ["../.sveet/index.js", route.id]
@@ -38,24 +38,30 @@ const renderPreloads = preloads => {
     .join("");
 };
 
-export default ({ initialPage, staticClient }, manifest) => {
+export default async ({ initialPage, staticClient }, { manifest }) => {
   let client = staticClient.clearCache();
   setStaticClient(client);
 
-  return preload(initialPage).then(route => {
-    const result = App.render({
-      initialPage,
-      staticClient
-    });
+  // We are loading each component in order to make sure that all staticQueries
+  // are loaded and avoid issues while navigating client side.
+  // This is actually an approximation because it will only register static queries
+  // that are code split using the routing mechanism. But it won't register
+  // staticQueries code split using another mechanism. This is an acceptable tradeoff.
+  await loadAllRoutes();
 
-    const preloads = concatPreloadsFrom(
-      getPreloadsFromRoute(manifest, route),
-      client.getPreloads()
-    );
+  const route = await preload(initialPage);
 
-    result.head = renderPreloads(preloads) + result.head;
-    result.dependencies = preloads.map(({ href }) => href);
-
-    return result;
+  const result = App.render({
+    initialPage
   });
+
+  const preloads = concatPreloadsFrom(
+    getPreloadsFromRoute(manifest, route),
+    client.getPreloads()
+  );
+
+  result.head = renderPreloads(preloads) + result.head;
+  result.dependencies = preloads.map(({ href }) => href);
+
+  return result;
 };

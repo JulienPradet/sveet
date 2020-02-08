@@ -1,6 +1,6 @@
 import { preload } from "./modules/router";
 import App from "./App.svelte";
-import { StaticClient, setStaticClient } from "sveet/graphql";
+import { StaticClient, setStaticClient } from "sveet/query";
 
 const initialPage = {
   pathname: window.location.pathname,
@@ -15,8 +15,7 @@ preload(initialPage).then(() => {
     target: document.getElementById("sveet"),
     hydrate: true,
     props: {
-      initialPage: initialPage,
-      staticClient: staticClient
+      initialPage: initialPage
     }
   });
 });

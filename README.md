@@ -30,7 +30,6 @@ The second reason is because building front-end tools is what I do for a living 
 
 - Svelte
 - Rollup
-- GraphQL (but the goal is to make it go away)
 
 ## Contributions
 

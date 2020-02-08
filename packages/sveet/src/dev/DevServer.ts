@@ -1,11 +1,9 @@
 import { ServerResponse, IncomingMessage } from "http";
 import polka, { Polka, Request, NextHandler } from "polka";
 import handleServe from "serve-handler";
-import QueryManager from "../graphql/QueryManager";
-import GraphQLClient from "../graphql/GraphQLClient";
 import compression from "compression";
 import { Renderer } from "../renderer";
-import { SsrStaticClient } from "../graphql/SsrStaticClient";
+import { SsrStaticClient } from "../query/SsrStaticClient";
 
 type ListenOptions = {
   host: string;
@@ -18,22 +16,17 @@ class DevServer {
   private clients: Set<ServerResponse> = new Set();
   private queue: NextHandler[] = [];
   private renderer?: Renderer;
-  private ssrStaticClient?: SsrStaticClient;
   private server: Polka<Request>;
-  private queryManager: QueryManager;
-  private client: GraphQLClient;
+  private ssrStaticClient: SsrStaticClient;
 
   constructor({
     staticDir,
-    queryManager,
-    client
+    ssrStaticClient
   }: {
     staticDir: string;
-    queryManager: QueryManager;
-    client: GraphQLClient;
+    ssrStaticClient: SsrStaticClient;
   }) {
-    this.queryManager = queryManager;
-    this.client = client;
+    this.ssrStaticClient = ssrStaticClient;
     this.server = polka<Request>()
       .use((request, response, next) => {
         if (this.isReady) {
@@ -47,7 +40,7 @@ class DevServer {
         return handleSveetListener(request, response);
       })
       .get("/__sveet/data/:query/:variables.json", (request, response) => {
-        return handleSveetData(queryManager, request, response);
+        return handleSveetData(ssrStaticClient, request, response);
       })
       .get("*", (request, response) => {
         return handleServe(
@@ -83,6 +76,7 @@ class DevServer {
                     response.end(result);
                   })
                   .catch(error => {
+                    console.error(error);
                     response.statusCode = 500;
                     response.end("Oops");
                   });
@@ -96,25 +90,25 @@ class DevServer {
         );
       });
 
-    const handleSveetData = (
-      queryManager: QueryManager,
+    const handleSveetData = async (
+      ssrStaticClient: SsrStaticClient,
       request: Request,
       response: ServerResponse
     ) => {
-      const query = queryManager.getQuery(request.params.query);
-      if (typeof query === "undefined") {
-        response.statusCode = 404;
-        response.end("Query not found.");
-      }
-
+      const hash = request.params.query;
       const variables = JSON.parse(
         decodeURIComponent(request.params.variables)
       );
-      return client.query(query as string, variables).then(data => {
+
+      try {
+        const data = await ssrStaticClient.query(hash, variables);
         response.statusCode = 200;
         response.setHeader("Content-Type", "application/json");
         response.end(JSON.stringify(data));
-      });
+      } catch (e) {
+        response.statusCode = 500;
+        response.end(e.message);
+      }
     };
 
     const handleSveetListener = (
@@ -162,7 +156,6 @@ class DevServer {
     });
   }
   setRenderer(renderer: Renderer) {
-    this.ssrStaticClient = new SsrStaticClient(this.queryManager, this.client);
     this.renderer = renderer;
   }
 }

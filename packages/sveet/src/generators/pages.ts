@@ -1,11 +1,9 @@
 import { Renderer } from "../renderer";
-import { SsrStaticClient } from "../graphql/SsrStaticClient";
+import { SsrStaticClient } from "../query/SsrStaticClient";
 import { Observable, from, merge } from "rxjs";
-import { mergeMap, finalize, last, tap } from "rxjs/operators";
+import { concatMap, finalize, last, tap, mergeMap } from "rxjs/operators";
 import { join } from "path";
 import { writeFile } from "../utils/fs";
-import QueryManager from "../graphql/QueryManager";
-import GraphQLClient from "../graphql/GraphQLClient";
 
 type Location = {
   pathname: string;
@@ -15,15 +13,11 @@ type Location = {
 
 export const build = ({
   renderer,
-  queryManager,
-  client
+  ssrStaticClient
 }: {
   renderer: Renderer;
-  queryManager: QueryManager;
-  client: GraphQLClient;
+  ssrStaticClient: SsrStaticClient;
 }) => {
-  const ssrStaticClient = new SsrStaticClient(queryManager, client);
-
   const getPages = (): Observable<Location> => {
     return from([
       {
@@ -31,9 +25,13 @@ export const build = ({
         search: "",
         state: null
       },
-      { pathname: "/ZmlsbXM6Mw==", search: "", state: null },
-      { pathname: "/ZmlsbXM6NA==", search: "", state: null },
-      { pathname: "/ZmlsbXM6NQ==", search: "", state: null }
+      { pathname: "/1", search: "", state: null },
+      { pathname: "/2", search: "", state: null },
+      { pathname: "/3", search: "", state: null },
+      { pathname: "/4", search: "", state: null },
+      { pathname: "/5", search: "", state: null },
+      { pathname: "/6", search: "", state: null },
+      { pathname: "/7", search: "", state: null }
     ]);
   };
 
@@ -51,8 +49,8 @@ export const build = ({
           join(
             process.cwd(),
             "build/__sveet/data/",
-            request.query,
-            `${JSON.stringify(request.variables)}.json`
+            request.hash,
+            `${JSON.stringify(request.props)}.json`
           ),
           JSON.stringify(request.result)
         )
@@ -68,7 +66,7 @@ export const build = ({
   );
 
   const htmlPages$ = getPages().pipe(
-    mergeMap(location => {
+    concatMap(location => {
       return from(
         renderPage(location).then(html => {
           return writeFile(

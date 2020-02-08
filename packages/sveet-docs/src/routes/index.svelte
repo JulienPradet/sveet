@@ -1,23 +1,14 @@
 <script context="module">
-  import { gql } from "sveet/graphql";
+  import { fetch } from "sveet/query";
 
-  const query = (after, first) => {
-    return gql({ after, first })`
-      query FilmsList($after: String, $first: Int) {
-        allFilms(after: $after, first: $first) {
-          edges {
-            node {
-              id
-              title
-            }
-          }
-        }
-      }
-    `;
+  export const staticQuery = async props => {
+    const response = await fetch("https://swapi.co/api/films/");
+    const data = await response.json();
+    return data.results;
   };
 
-  export const preload = page => {
-    return query("YXJyYXljb25uZWN0aW9uOjE=", 3);
+  export const preload = ({ location }) => {
+    return staticQuery({ after: "YXJyYXljb25uZWN0aW9uOjE=", first: 3 });
   };
 </script>
 
@@ -25,16 +16,16 @@
   export const after = "YXJyYXljb25uZWN0aW9uOjE=";
   export const first = 3;
 
-  const articles = query(after, first);
+  const articles = staticQuery({ after, first });
 </script>
 
 {#await articles}
   <p>Loading...</p>
 {:then result}
   <ul>
-    {#each result.data.allFilms.edges as article (article.node.id)}
+    {#each result as article (article.episode_id)}
       <li>
-        <a href={`/${article.node.id}`}>{article.node.title}</a>
+        <a href={`/${article.episode_id}`}>{article.title}</a>
       </li>
     {/each}
   </ul>

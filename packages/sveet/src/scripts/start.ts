@@ -22,12 +22,13 @@ import {
   filter,
   startWith,
   skipUntil,
-  skip
+  skip,
+  tap
 } from "rxjs/operators";
-import QueryManager from "../graphql/QueryManager";
 import { Sade } from "sade";
 import Logger, { DefaultLogger } from "../utils/logger";
-import GraphQLClient from "../graphql/GraphQLClient";
+import QueryManager from "../query/QueryManager";
+import { SsrStaticClient } from "../query/SsrStaticClient";
 
 export const commandDefinition = (prog: Sade) => {
   return prog
@@ -52,6 +53,7 @@ export const execute = (opts: ExecuteOptions) => {
     .pipe(
       mergeMap(() => {
         const queryManager = new QueryManager();
+        const ssrStaticClient = new SsrStaticClient();
 
         const watchEntry$ = watchEntry(
           {
@@ -72,7 +74,7 @@ export const execute = (opts: ExecuteOptions) => {
           distinctUntilChanged(),
           mergeMap(({ entry, routes }) =>
             watchBundle({
-              queryManager,
+              queryManager: queryManager,
               client: {
                 input: entry,
                 outputDir: join(process.cwd(), "build/static")
@@ -83,6 +85,11 @@ export const execute = (opts: ExecuteOptions) => {
               }
             })
           ),
+          tap(event => {
+            if (event.type === "ErrorEvent") {
+              opts.logger.error(`Compilation failed.`, event.error);
+            }
+          }),
           share()
         );
 
@@ -121,15 +128,10 @@ export const execute = (opts: ExecuteOptions) => {
           share()
         );
 
-        const client = new GraphQLClient({
-          uri: "https://swapi-graphql.netlify.com/.netlify/functions/index",
-          fetch: fetch
-        });
         return serve({
           logger: opts.logger,
           staticDir: join(process.cwd(), "build"),
-          queryManager: queryManager,
-          client: client,
+          ssrStaticClient: ssrStaticClient,
           events$,
           template$
         });

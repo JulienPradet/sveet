@@ -56,5 +56,5 @@ export default [
     "dist/scripts"
   ),
   makeClientConfig("src/DevClient.ts", "dist"),
-  makeClientConfig("graphql.ts", ".")
+  makeClientConfig(["query.ts"], ".")
 ];
