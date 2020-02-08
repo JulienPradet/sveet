@@ -3,7 +3,6 @@ import polka, { Polka, Request, NextHandler } from "polka";
 import handleServe from "serve-handler";
 import QueryManager from "../graphql/QueryManager";
 import GraphQLClient from "../graphql/GraphQLClient";
-import fetch from "node-fetch";
 import compression from "compression";
 import { Renderer } from "../renderer";
 import { SsrStaticClient } from "../graphql/SsrStaticClient";
@@ -21,14 +20,20 @@ class DevServer {
   private renderer?: Renderer;
   private ssrStaticClient?: SsrStaticClient;
   private server: Polka<Request>;
+  private queryManager: QueryManager;
+  private client: GraphQLClient;
 
   constructor({
     staticDir,
-    queryManager
+    queryManager,
+    client
   }: {
     staticDir: string;
     queryManager: QueryManager;
+    client: GraphQLClient;
   }) {
+    this.queryManager = queryManager;
+    this.client = client;
     this.server = polka<Request>()
       .use((request, response, next) => {
         if (this.isReady) {
@@ -91,10 +96,6 @@ class DevServer {
         );
       });
 
-    const client = new GraphQLClient({
-      uri: "https://swapi-graphql.netlify.com/.netlify/functions/index",
-      fetch: fetch
-    });
     const handleSveetData = (
       queryManager: QueryManager,
       request: Request,
@@ -161,7 +162,7 @@ class DevServer {
     });
   }
   setRenderer(renderer: Renderer) {
-    this.ssrStaticClient = new SsrStaticClient();
+    this.ssrStaticClient = new SsrStaticClient(this.queryManager, this.client);
     this.renderer = renderer;
   }
 }

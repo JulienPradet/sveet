@@ -1,3 +1,4 @@
+import fetch from "node-fetch";
 import serve from "../dev/serve";
 import { rm } from "../utils/fs";
 import {
@@ -13,10 +14,8 @@ import { watch as watchBundle } from "../generators/bundle";
 import { join } from "path";
 import { from, merge, of, Observable, zip, combineLatest } from "rxjs";
 import {
-  scan,
   mergeMap,
   distinctUntilChanged,
-  tap,
   map,
   share,
   take,
@@ -28,11 +27,12 @@ import {
 import QueryManager from "../graphql/QueryManager";
 import { Sade } from "sade";
 import Logger, { DefaultLogger } from "../utils/logger";
+import GraphQLClient from "../graphql/GraphQLClient";
 
 export const commandDefinition = (prog: Sade) => {
   return prog
     .command("start")
-    .describe("Launch developpment environment")
+    .describe("Launch development environment")
     .action(opts => {
       const { execute } = require("./scripts/start.js");
       const logger = new DefaultLogger();
@@ -72,9 +72,11 @@ export const execute = (opts: ExecuteOptions) => {
           distinctUntilChanged(),
           mergeMap(({ entry, routes }) =>
             watchBundle({
-              input: entry,
-              outputDir: join(process.cwd(), "build/static"),
               queryManager,
+              client: {
+                input: entry,
+                outputDir: join(process.cwd(), "build/static")
+              },
               ssr: {
                 input: join(process.cwd(), "src/ssr.js"),
                 outputDir: join(process.cwd(), "build/server")
@@ -119,10 +121,15 @@ export const execute = (opts: ExecuteOptions) => {
           share()
         );
 
+        const client = new GraphQLClient({
+          uri: "https://swapi-graphql.netlify.com/.netlify/functions/index",
+          fetch: fetch
+        });
         return serve({
           logger: opts.logger,
           staticDir: join(process.cwd(), "build"),
           queryManager: queryManager,
+          client: client,
           events$,
           template$
         });

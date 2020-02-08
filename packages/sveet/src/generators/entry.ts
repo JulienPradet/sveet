@@ -1,6 +1,6 @@
 import { stripIndent } from "common-tags";
 import { writeFile } from "../utils/fs";
-import { Observable } from "rxjs";
+import { Observable, from } from "rxjs";
 import { mergeMap } from "rxjs/operators";
 
 type GenerateEntryOptions = {
@@ -20,8 +20,8 @@ const makeEntry = ({ entry }: GenerateEntryOptions) => {
 export const build = (
   options: EntryOptions,
   entryOptions: GenerateEntryOptions
-) => {
-  return writeFile(options.output, makeEntry(entryOptions));
+): Observable<string> => {
+  return from(writeFile(options.output, makeEntry(entryOptions)));
 };
 
 export const watch = (

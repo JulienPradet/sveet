@@ -12,14 +12,8 @@ type Route = {
   filepath: string;
 };
 
-export const build = () => {};
-
-export const watch = (options: RoutesOptions): Observable<Array<Route>> => {
-  const getChunkName = (filepath: string) => {
-    return relative(join(process.cwd(), "./src"), filepath);
-  };
-
-  return of([
+const getRoutesFiles = () => {
+  const routes = [
     {
       path: /^\/$/,
       filepath: join(process.cwd(), "src/routes/index.svelte")
@@ -28,32 +22,46 @@ export const watch = (options: RoutesOptions): Observable<Array<Route>> => {
       path: new RegExp("^/(?<slug>[^?#]*)"),
       filepath: join(process.cwd(), "src/routes/[slug].svelte")
     }
-  ] as Array<Route>).pipe(
-    mergeMap(routes => {
-      const routeTree = `
-        [
-          ${routes
-            .map(
-              route => `
-                {
-                  path: ${route.path.toString()},
-                  id: ${JSON.stringify(getChunkName(route.filepath))},
-                  component: () => import("${route.filepath}")
-                }
-              `
-            )
-            .join(",\n")}
-        ]
-      `;
+  ] as Array<Route>;
 
-      return from(
-        writeFile(
-          options.output,
-          `
-            export default ${routeTree};
+  return routes;
+};
+
+const renderRoutesFile = (routes: Array<Route>): string => {
+  const getChunkName = (filepath: string) => {
+    return relative(join(process.cwd(), "./src"), filepath);
+  };
+
+  return `
+    export default [
+      ${routes
+        .map(
+          route => `
+            {
+              path: ${route.path.toString()},
+              id: ${JSON.stringify(getChunkName(route.filepath))},
+              component: () => import("${route.filepath}")
+            }
           `
         )
-      ).pipe(map(() => routes));
+        .join(",\n")}
+    ]
+  `;
+};
+
+export const build = (options: RoutesOptions): Observable<Array<Route>> => {
+  const routes = getRoutesFiles();
+  return from(writeFile(options.output, renderRoutesFile(routes))).pipe(
+    map(() => routes)
+  );
+};
+
+export const watch = (options: RoutesOptions): Observable<Array<Route>> => {
+  return of(getRoutesFiles()).pipe(
+    mergeMap(routes => {
+      return from(writeFile(options.output, renderRoutesFile(routes))).pipe(
+        map(() => routes)
+      );
     })
   );
 };

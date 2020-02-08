@@ -7,7 +7,8 @@ export type GraphQLClientOptions = {
   uri: string;
 };
 
-const originalFetch = (url: string, options: object) => fetch(url, options);
+const originalFetch = (url: string, options: object) =>
+  fetch(url, options).then(response => response.json());
 
 class StaticClient {
   private fetcher: any;
@@ -39,9 +40,9 @@ class StaticClient {
       {
         method: "GET"
       }
-    ).then((response: Response) => {
+    ).then((response: Result) => {
       this.requestsCache.delete(query, variables);
-      return response.json();
+      return response;
     });
 
     this.requestsCache.set(query, variables, request);

@@ -6,17 +6,20 @@ import { Observable } from "rxjs";
 import { EventStatus } from "../generators/EventStatus";
 import { take, map, mergeMap, scan, withLatestFrom } from "rxjs/operators";
 import Logger from "../utils/logger";
+import GraphQLClient from "../graphql/GraphQLClient";
 
 const serve = ({
   logger,
   staticDir,
   queryManager,
+  client,
   events$,
   template$
 }: {
   logger: Logger;
   staticDir: string;
   queryManager: QueryManager;
+  client: GraphQLClient;
   events$: Observable<EventStatus>;
   template$: Observable<Buffer>;
 }) => {
@@ -25,7 +28,8 @@ const serve = ({
     map(() => {
       const server = new DevServer({
         staticDir,
-        queryManager
+        queryManager,
+        client
       });
 
       server.listen({ host: "0.0.0.0", port: 3000 }, () => {

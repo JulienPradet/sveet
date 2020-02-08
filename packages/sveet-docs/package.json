@@ -6,6 +6,7 @@
     "sveet": "0.0.0"
   },
   "scripts": {
+    "build": "sveet build",
     "start": "sveet start"
   }
 }

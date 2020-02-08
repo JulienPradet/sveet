@@ -1,4 +1,9 @@
-import { watch as rollupWatch } from "rollup";
+import {
+  watch as rollupWatch,
+  rollup,
+  RollupOptions,
+  OutputOptions
+} from "rollup";
 import resolve from "rollup-plugin-node-resolve";
 import commonjs from "rollup-plugin-commonjs";
 import json from "rollup-plugin-json";
@@ -11,98 +16,160 @@ import SveetGraphQLPreprocess from "../graphql/preprocess";
 import QueryManager from "../graphql/QueryManager";
 import { EventStatus } from "./EventStatus";
 
-export const watch = (options: {
+type ClientBundleOptions = {
   input: string;
   outputDir: string;
+};
+type SsrBundleOptions = {
+  input: string;
+  outputDir: string;
+};
+type BundleOptions = {
   queryManager: QueryManager;
-  ssr: {
-    input: string;
-    outputDir: string;
+  client: ClientBundleOptions;
+  ssr: SsrBundleOptions;
+};
+
+const makeClientConfig = (
+  queryManager: QueryManager,
+  options: ClientBundleOptions
+): RollupOptions => {
+  return {
+    input: options.input,
+    output: {
+      dir: options.outputDir,
+      format: "esm",
+      sourcemap: true,
+      chunkFileNames: "[name].js"
+    },
+    plugins: [
+      replace({
+        "process.browser": "true",
+        "process.env.NODE_ENV": JSON.stringify("development")
+      }),
+      svelte({
+        hydratable: true,
+        dev: true,
+        preprocess: [SveetGraphQLPreprocess(queryManager)]
+      }),
+      json(),
+      resolve({
+        preferBuiltins: true,
+        extensions: [".mjs", ".js"]
+      }),
+      commonjs(),
+      outputManifest({
+        fileName: "../manifest.json",
+        nameSuffix: "",
+        filter: chunk => Boolean(chunk.facadeModuleId),
+        generate: (keyValueDecorator, seed) => {
+          return chunks => {
+            return Object.values(chunks).reduce((manifest, chunk: any) => {
+              const relativeFilePath = relative(
+                join(process.cwd(), "src"),
+                chunk.facadeModuleId
+              );
+              return {
+                ...manifest,
+                [relativeFilePath]: [chunk.fileName, ...chunk.imports]
+              };
+            }, {});
+          };
+        }
+      })
+    ]
   };
-}) => {
+};
+
+const makeSsrConfig = (
+  queryManager: QueryManager,
+  options: SsrBundleOptions
+): RollupOptions => {
+  return {
+    input: options.input,
+    output: {
+      dir: options.outputDir,
+      format: "commonjs",
+      sourcemap: true
+    },
+    external: [
+      ...Object.keys(require(join(process.cwd(), "package.json")).dependencies),
+      ...Object.keys(
+        require(join(__dirname, "../../package.json")).dependencies
+      ),
+      ...Object.keys((process as any).binding("natives"))
+    ].filter(packageName => packageName !== "svelte"),
+    plugins: [
+      replace({
+        window: "undefined",
+        "process.browser": "false",
+        "process.env.NODE_ENV": JSON.stringify("development")
+      }),
+      svelte({
+        generate: "ssr",
+        dev: true,
+        preprocess: [SveetGraphQLPreprocess(queryManager)]
+      }),
+      json(),
+      resolve({
+        preferBuiltins: true,
+        extensions: [".mjs", ".js"]
+      }),
+      commonjs()
+    ]
+  };
+};
+
+export const build = (options: BundleOptions) => {
+  return new Observable<EventStatus>(observer => {
+    const run = async () => {
+      try {
+        observer.next({
+          type: "CompileEvent"
+        });
+
+        const rollupClientOptions = makeClientConfig(
+          options.queryManager,
+          options.client
+        );
+        const rollupSsrOptions = makeSsrConfig(
+          options.queryManager,
+          options.ssr
+        );
+
+        const [clientBundle, ssrBundle] = await Promise.all([
+          rollup(rollupClientOptions),
+          rollup(rollupSsrOptions)
+        ]);
+
+        await Promise.all([
+          clientBundle.write(rollupClientOptions.output as OutputOptions),
+          ssrBundle.write(rollupSsrOptions.output as OutputOptions)
+        ]);
+
+        observer.next({
+          type: "ReadyEvent"
+        });
+      } catch (error) {
+        observer.next({
+          type: "ErrorEvent",
+          error: error
+        });
+      }
+
+      observer.complete();
+    };
+
+    run();
+  });
+};
+
+export const watch = (options: BundleOptions) => {
   return new Observable<EventStatus>(observer => {
     let ready = false;
     const watcher = rollupWatch([
-      {
-        input: options.input,
-        output: {
-          dir: options.outputDir,
-          format: "esm",
-          sourcemap: true,
-          chunkFileNames: "[name].js"
-        },
-        plugins: [
-          replace({
-            "process.browser": "true",
-            "process.env.NODE_ENV": JSON.stringify("development")
-          }),
-          svelte({
-            hydratable: true,
-            dev: true,
-            preprocess: [SveetGraphQLPreprocess(options.queryManager)]
-          }),
-          json(),
-          resolve({
-            preferBuiltins: true,
-            extensions: [".mjs", ".js"]
-          }),
-          commonjs(),
-          outputManifest({
-            fileName: "../manifest.json",
-            nameSuffix: "",
-            filter: chunk => Boolean(chunk.facadeModuleId),
-            generate: (keyValueDecorator, seed) => {
-              return chunks => {
-                return Object.values(chunks).reduce((manifest, chunk: any) => {
-                  const relativeFilePath = relative(
-                    join(process.cwd(), "src"),
-                    chunk.facadeModuleId
-                  );
-                  return {
-                    ...manifest,
-                    [relativeFilePath]: [chunk.fileName, ...chunk.imports]
-                  };
-                }, {});
-              };
-            }
-          })
-        ]
-      },
-      {
-        input: options.ssr.input,
-        output: {
-          dir: options.ssr.outputDir,
-          format: "commonjs",
-          sourcemap: true
-        },
-        external: [
-          ...Object.keys(
-            require(join(process.cwd(), "package.json")).dependencies
-          ),
-          ...Object.keys(
-            require(join(__dirname, "../../package.json")).dependencies
-          ),
-          ...Object.keys((process as any).binding("natives"))
-        ].filter(packageName => packageName !== "svelte"),
-        plugins: [
-          replace({
-            window: "undefined",
-            "process.browser": "false",
-            "process.env.NODE_ENV": JSON.stringify("development")
-          }),
-          svelte({
-            generate: "ssr",
-            dev: true,
-            preprocess: [SveetGraphQLPreprocess(options.queryManager)]
-          }),
-          json(),
-          resolve({
-            preferBuiltins: true,
-            extensions: [".mjs", ".js"]
-          }),
-          commonjs()
-        ]
-      }
+      makeClientConfig(options.queryManager, options.client),
+      makeSsrConfig(options.queryManager, options.ssr)
     ]);
 
     watcher.on("event", event => {

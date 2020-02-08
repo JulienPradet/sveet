@@ -50,7 +50,6 @@ class GraphQLClient {
 
     return this.fetch({ query: query, variables: variables }).then(result => {
       this.cache.set(query, variables, result);
-      setTimeout(() => this.cleanCache(query, variables), 30000);
       return result;
     });
   }
