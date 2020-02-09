@@ -1,10 +1,13 @@
 <script context="module">
   import { fetch } from "sveet/query";
 
-  export const staticQuery = async props => {
+  const staticQuery = async props => {
     const response = await fetch("https://swapi.co/api/films/");
     const data = await response.json();
-    return data.results;
+    return data.results.map(({ episode_id, title }) => ({
+      episode_id,
+      title
+    }));
   };
 
   export const preload = ({ location }) => {
@@ -32,10 +35,3 @@
 {:catch error}
   <li>ERROR: {error}</li>
 {/await}
-
-<ul>
-  <li>variables passed to the query are the props</li>
-  <li>Parsed with acorn</li>
-  <li>Rendered with escodegen</li>
-  <li>query with micro-graphql-react?</li>
-</ul>

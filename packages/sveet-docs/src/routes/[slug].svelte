@@ -3,7 +3,10 @@
 
   export const staticQuery = async ({ id }) => {
     const response = await fetch(`https://swapi.co/api/films/${id}`);
-    return await response.json();
+    const film = await response.json();
+    return {
+      title: film.title
+    };
   };
 
   export const preload = ({ location }) => {
