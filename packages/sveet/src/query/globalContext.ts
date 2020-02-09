@@ -1,11 +1,12 @@
 import { StaticClient } from "./StaticClient";
+import { getContext, setContext } from "svelte";
 
-let context: StaticClient;
+const contextKey = {};
 
 export function getStaticClient(): StaticClient {
-  return context;
+  return getContext(contextKey);
 }
 
 export function setStaticClient(staticClient: StaticClient) {
-  context = staticClient;
+  setContext(contextKey, staticClient);
 }

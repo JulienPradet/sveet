@@ -1,12 +1,10 @@
-import { SsrStaticClient } from "./query/SsrStaticClient";
-import { setStaticClient } from "./query/context";
-
 export type Manifest = object;
 export type Renderer = (props: object) => Promise<string>;
 
 type RendererOptions = {
   template: string;
   rendererPath: string;
+  clientPath: string;
   manifestPath: string;
 };
 
@@ -27,7 +25,7 @@ export default (options: RendererOptions): Renderer => {
           .replace("%sveet.content%", svelteResult.html)
           .replace(
             "%sveet.scripts%",
-            `<script type="module" src="/static/index.js"></script>`
+            `<script type="module" src="${options.clientPath}"></script>`
           );
       }
     );

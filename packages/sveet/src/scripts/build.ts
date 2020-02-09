@@ -1,11 +1,10 @@
-import fetch from "node-fetch";
 import { Sade } from "sade";
 import { join } from "path";
 import { from, combineLatest } from "rxjs";
 import { rm } from "../utils/fs";
 import { mergeMap, share, tap, filter } from "rxjs/operators";
 import QueryManager from "../query/QueryManager";
-import { build as buildEntry } from "../generators/entry";
+import { build as buildEntry } from "../generators/entries";
 import { build as buildRoutes } from "../generators/routes";
 import { build as buildBundle } from "../generators/bundle";
 import { build as buildTemplate } from "../generators/template";
@@ -13,6 +12,8 @@ import { build as buildPages } from "../generators/pages";
 import Logger, { DefaultLogger } from "../utils/logger";
 import renderer from "../renderer";
 import { SsrStaticClient } from "../query/SsrStaticClient";
+
+process.env.NODE_ENV = "production";
 
 export const commandDefinition = (prog: Sade) => {
   return prog
@@ -39,28 +40,26 @@ export const execute = (opts: ExecuteOptions) => {
         const queryManager = new QueryManager();
         const ssrStaticClient = new SsrStaticClient();
 
-        const entry$ = buildEntry(
-          {
-            output: join(process.cwd(), ".sveet/index.js")
-          },
-          { entry: join("../src/index.js") }
-        );
+        const entry$ = buildEntry({
+          clientOutput: join(process.cwd(), ".sveet/client.js"),
+          ssrOutput: join(process.cwd(), ".sveet/ssr.js")
+        });
 
         const routes$ = buildRoutes({
           output: join(process.cwd(), ".sveet/routes.js")
         });
 
         const bundle$ = combineLatest(entry$, routes$).pipe(
-          mergeMap(([entry, routes]) =>
+          mergeMap(([entries, routes]) =>
             buildBundle({
               queryManager,
               client: {
-                input: entry,
+                input: entries.client,
                 outputDir: join(process.cwd(), "build/static")
               },
               ssr: {
-                input: join(process.cwd(), "src/ssr.js"),
-                outputDir: join(process.cwd(), "build/server")
+                input: entries.ssr,
+                outputDir: join(process.cwd(), ".sveet/server")
               }
             })
           ),
@@ -90,8 +89,9 @@ export const execute = (opts: ExecuteOptions) => {
             return buildPages({
               renderer: renderer({
                 template: template.toString(),
-                rendererPath: join(process.cwd(), "build/server/ssr.js"),
-                manifestPath: join(process.cwd(), "build/manifest.json")
+                rendererPath: join(process.cwd(), ".sveet/server/ssr.js"),
+                manifestPath: join(process.cwd(), ".sveet/manifest.json"),
+                clientPath: "/static/client.js"
               }),
               ssrStaticClient: ssrStaticClient
             });

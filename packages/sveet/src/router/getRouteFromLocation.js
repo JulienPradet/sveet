@@ -1,6 +1,4 @@
-import routes from "../../../.sveet/routes";
-
-export const getRouteFromLocation = location => {
+export const getRouteFromLocation = (routes, location) => {
   const route = routes.find(route => {
     return route.path.test(location.pathname.replace(/[?#].*$/, ""));
   });

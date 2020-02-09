@@ -1,12 +1,13 @@
 import { writable, derived } from "svelte/store";
-import { onLocationChange } from "./history";
+import { onLocationChange, listenNavigation } from "./history";
 import { preload } from "./preload";
 import { getRouteFromLocation } from "./getRouteFromLocation";
 
-export const makeRouterStores = initialPage => {
+export const makeRouterStores = (routes, staticClient, initialPage) => {
   const page = writable(initialPage);
 
   if (typeof window !== "undefined") {
+    listenNavigation(routes);
     onLocationChange(location => {
       let shouldTransition = true;
       const timeout = setTimeout(() => {
@@ -14,7 +15,7 @@ export const makeRouterStores = initialPage => {
         page.update(() => location);
       }, 100);
 
-      preload(location).then(() => {
+      preload(routes, staticClient, location).then(() => {
         if (shouldTransition) {
           clearTimeout(timeout);
           page.update(() => location);
@@ -24,7 +25,7 @@ export const makeRouterStores = initialPage => {
   }
 
   const route = derived(page, $page => {
-    const route = getRouteFromLocation($page);
+    const route = getRouteFromLocation(routes, $page);
     return route;
   });
 

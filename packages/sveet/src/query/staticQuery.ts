@@ -1,6 +1,6 @@
 import { getStaticClient } from "./context";
-import { Query, Variables } from "./StaticClient";
+import { Hash, Variables } from "./StaticClient";
 
-export const staticQuery = (query: Query, variables: Variables) => {
-  return getStaticClient().query(query, variables);
+export const staticQuery = (hash: Hash, props: Variables) => {
+  return getStaticClient().query(hash, props);
 };

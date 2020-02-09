@@ -1,39 +1,67 @@
 import CacheClient from "./CacheClient";
 import { ReplaySubject } from "rxjs";
+import { StaticClient, Hash, Variables, Result } from "./StaticClient";
 
-export type Hash = string;
-export type Variables = object;
-export type Result = object;
 export type QueryFunction = (props: object) => Promise<Result>;
 
-export class SsrStaticClient {
+export class SsrStaticClient implements StaticClient {
   private hashMap: Map<Hash, QueryFunction>;
   private cache: CacheClient<Hash, Variables, Result>;
   private requestsCache: CacheClient<Hash, Variables, Promise<Result>>;
   private fetchedRequests: Set<string>;
-  private subject?: ReplaySubject<{
+  private request$?: ReplaySubject<{
     hash: Hash;
     props: Variables;
     result: Result;
   }>;
 
-  constructor() {
-    this.hashMap = new Map();
-    this.cache = new CacheClient();
-    this.requestsCache = new CacheClient();
+  constructor(
+    {
+      hashMap,
+      cache,
+      requestsCache,
+      request$
+    }: {
+      hashMap: Map<Hash, QueryFunction>;
+      cache: CacheClient<Hash, Variables, Result>;
+      requestsCache: CacheClient<Hash, Variables, Promise<Result>>;
+      request$?: ReplaySubject<{
+        hash: Hash;
+        props: Variables;
+        result: Result;
+      }>;
+    } = {
+      hashMap: new Map(),
+      cache: new CacheClient(),
+      requestsCache: new CacheClient(),
+      request$: new ReplaySubject()
+    }
+  ) {
+    this.hashMap = hashMap;
+    this.cache = cache;
+    this.requestsCache = requestsCache;
+    this.request$ = request$;
     this.fetchedRequests = new Set();
-    this.subject = new ReplaySubject();
   }
+
+  __isStaticClient = true;
 
   registerQuery(hash: Hash, queryFunction: QueryFunction) {
     this.hashMap.set(hash, queryFunction);
-    return (props: Variables) => this.query(hash, props);
+    return (props: Variables) => {
+      return this.query(hash, props);
+    };
   }
 
   query(hash: Hash, props: Variables): Result | Promise<Result> {
     if (!this.hashMap.has(hash)) {
       throw new Error(`Query with hash ${hash} was not registered.`);
     }
+
+    const url = `/__sveet/data/${hash}/${encodeURIComponent(
+      JSON.stringify(props)
+    )}.json`;
+    this.fetchedRequests.add(url);
 
     const cachedData = this.cache.get(hash, props);
     if (cachedData) {
@@ -45,16 +73,11 @@ export class SsrStaticClient {
       return cachedRequest;
     }
 
-    const url = `/__sveet/data/${hash}/${encodeURIComponent(
-      JSON.stringify(props)
-    )}.json`;
-    this.fetchedRequests.add(url);
-
     const queryFunction = this.hashMap.get(hash) as QueryFunction;
     const request = queryFunction(props).then(result => {
       this.cache.set(hash, props, result);
-      if (this.subject) {
-        this.subject.next({
+      if (this.request$) {
+        this.request$.next({
           hash,
           props,
           result
@@ -67,9 +90,15 @@ export class SsrStaticClient {
     return request;
   }
 
-  clearCache() {
-    this.fetchedRequests.clear();
-    return this;
+  clone() {
+    // The goal is to reuse cache and everything else but to
+    // keep track of the fetched requests for a single SSR pass.
+    return new SsrStaticClient({
+      hashMap: this.hashMap,
+      cache: this.cache,
+      requestsCache: this.requestsCache,
+      request$: this.request$
+    });
   }
 
   getPreloads() {
@@ -83,17 +112,17 @@ export class SsrStaticClient {
   }
 
   getFetchedRequests$() {
-    if (this.subject) {
-      return this.subject.asObservable();
+    if (this.request$) {
+      return this.request$.asObservable();
     }
 
     throw new Error("Static Client was already closed");
   }
 
   closeClient() {
-    if (this.subject) {
-      this.subject.complete();
-      this.subject = undefined;
+    if (this.request$) {
+      this.request$.complete();
+      this.request$ = undefined;
       return;
     }
 

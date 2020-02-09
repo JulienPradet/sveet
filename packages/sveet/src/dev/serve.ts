@@ -11,11 +11,13 @@ const serve = ({
   logger,
   staticDir,
   ssrStaticClient,
+  clientPath,
   events$,
   template$
 }: {
   logger: Logger;
   staticDir: string;
+  clientPath: string;
   ssrStaticClient: SsrStaticClient;
   events$: Observable<EventStatus>;
   template$: Observable<Buffer>;
@@ -42,16 +44,18 @@ const serve = ({
             server.ready({
               renderer: renderer({
                 template: template.toString(),
-                rendererPath: join(process.cwd(), "build/server/ssr.js"),
-                manifestPath: join(process.cwd(), "build/manifest.json")
+                rendererPath: join(process.cwd(), ".sveet/server/ssr.js"),
+                manifestPath: join(process.cwd(), ".sveet/manifest.json"),
+                clientPath: clientPath
               })
             });
           } else if (event.type === "ReloadEvent") {
             server.setRenderer(
               renderer({
                 template: template.toString(),
-                rendererPath: join(process.cwd(), "build/server/ssr.js"),
-                manifestPath: join(process.cwd(), "build/manifest.json")
+                rendererPath: join(process.cwd(), ".sveet/server/ssr.js"),
+                manifestPath: join(process.cwd(), ".sveet/manifest.json"),
+                clientPath: clientPath
               })
             );
           }

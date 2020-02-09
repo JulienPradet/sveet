@@ -1,7 +1,7 @@
 import { Renderer } from "../renderer";
 import { SsrStaticClient } from "../query/SsrStaticClient";
 import { Observable, from, merge } from "rxjs";
-import { concatMap, finalize, last, tap, mergeMap } from "rxjs/operators";
+import { last, tap, mergeMap } from "rxjs/operators";
 import { join } from "path";
 import { writeFile } from "../utils/fs";
 
@@ -57,16 +57,14 @@ export const build = ({
       );
     }),
     tap(
-      path => {
-        console.log(path);
-      },
+      path => {},
       () => {},
       () => console.log("Data completed")
     )
   );
 
   const htmlPages$ = getPages().pipe(
-    concatMap(location => {
+    mergeMap(location => {
       return from(
         renderPage(location).then(html => {
           return writeFile(
@@ -77,9 +75,7 @@ export const build = ({
       );
     }),
     tap(
-      path => {
-        console.log(path);
-      },
+      path => {},
       () => {},
       () => console.log("Pages completed")
     ),

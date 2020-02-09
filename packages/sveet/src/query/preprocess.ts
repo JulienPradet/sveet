@@ -3,20 +3,21 @@ import { generate } from "escodegen";
 import { walk } from "estree-walker";
 import {
   Program,
-  ExportNamedDeclaration,
+  SourceLocation,
   VariableDeclaration,
-  CallExpression,
-  ArrowFunctionExpression,
   ImportDeclaration
 } from "estree";
 import QueryManager from "./QueryManager";
 
-const generateReplacement = (template: string) => {
+const generateReplacement = (template: string, loc: SourceLocation | null) => {
   const replacement = (parse(template, {
     sourceType: "module",
     ecmaVersion: 11
   }) as any) as Program;
-  return replacement.body[0];
+  return {
+    ...replacement.body[0],
+    loc
+  };
 };
 
 export default (queryManager: QueryManager, server: boolean) => {
@@ -42,47 +43,41 @@ export default (queryManager: QueryManager, server: boolean) => {
 
       walk(ast, {
         enter(node, parent, prop, index) {
-          if (node.type === "ExportNamedDeclaration") {
-            const exportDeclaration = node as ExportNamedDeclaration;
-            if (exportDeclaration.declaration) {
-              if (
-                exportDeclaration.declaration.type === "VariableDeclaration"
-              ) {
-                const id = exportDeclaration.declaration.declarations[0].id;
-                if (id.type === "Identifier") {
-                  const name = id.name;
+          if (node.type === "VariableDeclaration") {
+            const variableDeclaration = node as VariableDeclaration;
+            const id = variableDeclaration.declarations[0].id;
+            if (id.type === "Identifier") {
+              const name = id.name;
 
-                  if (name === "staticQuery") {
-                    const hash = queryManager.registerQuery(filename);
-                    filesWithQuery.add(filename);
+              if (name === "staticQuery") {
+                const hash = queryManager.registerQuery(filename);
+                filesWithQuery.add(filename);
 
-                    let replacement;
+                let replacement;
 
-                    if (server) {
-                      replacement = generateReplacement(`
-                        export const staticQuery = _sveet_registerQuery(
-                          ${JSON.stringify(hash)},
-                          fn
-                        )
-                      `) as ExportNamedDeclaration;
-                      const variableDeclarationRelplacement = replacement.declaration as VariableDeclaration;
-                      const functionReplacement = variableDeclarationRelplacement
-                        .declarations[0].init as CallExpression;
-                      functionReplacement.arguments[1] = exportDeclaration
-                        .declaration.declarations[0]
-                        .init as ArrowFunctionExpression;
-                    } else {
-                      replacement = generateReplacement(`
-                        export const staticQuery = (props) => {
-                          return _sveet_staticQuery(${JSON.stringify(
-                            hash
-                          )}, props)
-                        }
-                      `);
-                    }
-                    this.replace(replacement);
-                  }
+                if (server) {
+                  replacement = generateReplacement(
+                    `
+                      const staticQuery = _sveet_registerQuery(
+                        ${JSON.stringify(hash)},
+                        ${generate(variableDeclaration.declarations[0].init)}
+                      )
+                    `,
+                    node.loc || null
+                  ) as VariableDeclaration;
+                } else {
+                  replacement = generateReplacement(
+                    `
+                      const staticQuery = _sveet_ensureStaticClient((props, staticClient) => {
+                        return staticClient.query(${JSON.stringify(
+                          hash
+                        )}, props)
+                      })
+                    `,
+                    node.loc || null
+                  );
                 }
+                this.replace(replacement);
               }
             }
           }
@@ -94,11 +89,13 @@ export default (queryManager: QueryManager, server: boolean) => {
               let importStatement;
               if (server) {
                 importStatement = generateReplacement(
-                  `import { registerQuery as _sveet_registerQuery } from "sveet/query";`
+                  `import { registerQuery as _sveet_registerQuery } from "sveet/query";`,
+                  null
                 );
               } else {
                 importStatement = generateReplacement(
-                  `import { staticQuery as _sveet_staticQuery } from "sveet/query";`
+                  `import { ensureStaticClient as _sveet_ensureStaticClient } from "sveet/query";`,
+                  null
                 );
               }
               program.body.unshift(importStatement);
@@ -120,12 +117,13 @@ export default (queryManager: QueryManager, server: boolean) => {
                 }
               );
 
-              console.log(isFetchImport, filename);
-
               if (isFetchImport) {
                 if (server) {
                   this.replace(
-                    generateReplacement(`import fetch from "node-fetch";`)
+                    generateReplacement(
+                      `import fetch from "node-fetch";`,
+                      node.loc || null
+                    )
                   );
                 } else {
                   //   this.remove();

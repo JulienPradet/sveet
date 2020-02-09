@@ -1,6 +1,4 @@
-import routes from "../../../.sveet/routes";
-
-export const loadAllRoutes = () => {
+export const loadAllRoutes = routes => {
   return Promise.all(
     routes.map(({ component }) => {
       return component();

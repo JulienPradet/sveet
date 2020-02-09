@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import serve from "../dev/serve";
 import { rm } from "../utils/fs";
 import {
@@ -7,7 +6,7 @@ import {
   ReloadEvent,
   InitializeEvent
 } from "../generators/EventStatus";
-import { watch as watchEntry } from "../generators/entry";
+import { watch as watchEntry } from "../generators/entries";
 import { watch as watchTemplate } from "../generators/template";
 import { watch as watchRoutes } from "../generators/routes";
 import { watch as watchBundle } from "../generators/bundle";
@@ -29,6 +28,8 @@ import { Sade } from "sade";
 import Logger, { DefaultLogger } from "../utils/logger";
 import QueryManager from "../query/QueryManager";
 import { SsrStaticClient } from "../query/SsrStaticClient";
+
+process.env.NODE_ENV = "development";
 
 export const commandDefinition = (prog: Sade) => {
   return prog
@@ -55,33 +56,27 @@ export const execute = (opts: ExecuteOptions) => {
         const queryManager = new QueryManager();
         const ssrStaticClient = new SsrStaticClient();
 
-        const watchEntry$ = watchEntry(
-          {
-            output: join(process.cwd(), ".sveet/index.js")
-          },
-          of({ entry: join("../src/index.js") })
-        );
+        const watchEntry$ = watchEntry({
+          clientOutput: join(process.cwd(), ".sveet/client.js"),
+          ssrOutput: join(process.cwd(), ".sveet/ssr.js")
+        });
 
         const watchRoutes$ = watchRoutes({
           output: join(process.cwd(), ".sveet/routes.js")
         });
 
-        const watchBundle$ = combineLatest(
-          watchEntry$,
-          watchRoutes$,
-          (entry, routes) => ({ entry, routes })
-        ).pipe(
+        const watchBundle$ = combineLatest(watchEntry$, watchRoutes$).pipe(
           distinctUntilChanged(),
-          mergeMap(({ entry, routes }) =>
+          mergeMap(([entries, routes]) =>
             watchBundle({
               queryManager: queryManager,
               client: {
-                input: entry,
+                input: entries.client,
                 outputDir: join(process.cwd(), "build/static")
               },
               ssr: {
-                input: join(process.cwd(), "src/ssr.js"),
-                outputDir: join(process.cwd(), "build/server")
+                input: entries.ssr,
+                outputDir: join(process.cwd(), ".sveet/server")
               }
             })
           ),
@@ -131,6 +126,7 @@ export const execute = (opts: ExecuteOptions) => {
         return serve({
           logger: opts.logger,
           staticDir: join(process.cwd(), "build"),
+          clientPath: "/static/client.js",
           ssrStaticClient: ssrStaticClient,
           events$,
           template$

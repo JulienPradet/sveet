@@ -27,7 +27,7 @@ export const onLocationChange = fn => {
   listeners.add(fn);
 };
 
-if (window !== undefined) {
+export const listenNavigation = () => {
   window.addEventListener("popstate", event => {
     notifyListeners({
       pathname: document.location.pathname,
@@ -48,4 +48,4 @@ if (window !== undefined) {
     },
     { capture: true }
   );
-}
+};
