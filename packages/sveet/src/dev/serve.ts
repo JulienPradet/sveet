@@ -44,7 +44,7 @@ const serve = ({
             server.ready({
               renderer: renderer({
                 template: template.toString(),
-                rendererPath: join(process.cwd(), ".sveet/server/ssr.js"),
+                rendererPath: join(process.cwd(), ".sveet/build/server/ssr.js"),
                 manifestPath: join(process.cwd(), ".sveet/manifest.json"),
                 clientPath: clientPath
               })
@@ -53,7 +53,7 @@ const serve = ({
             server.setRenderer(
               renderer({
                 template: template.toString(),
-                rendererPath: join(process.cwd(), ".sveet/server/ssr.js"),
+                rendererPath: join(process.cwd(), ".sveet/build/server/ssr.js"),
                 manifestPath: join(process.cwd(), ".sveet/manifest.json"),
                 clientPath: clientPath
               })

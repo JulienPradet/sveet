@@ -34,7 +34,12 @@ export type ExecuteOptions = {
 };
 
 export const execute = (opts: ExecuteOptions) => {
-  return from(rm(join(process.cwd(), "build")))
+  return from(
+    Promise.all([
+      rm(join(process.cwd(), "build")),
+      rm(join(process.cwd(), ".sveet/build"))
+    ])
+  )
     .pipe(
       mergeMap(() => {
         const queryManager = new QueryManager();
@@ -59,7 +64,7 @@ export const execute = (opts: ExecuteOptions) => {
               },
               ssr: {
                 input: entries.ssr,
-                outputDir: join(process.cwd(), ".sveet/server")
+                outputDir: join(process.cwd(), ".sveet/build/server")
               }
             })
           ),
@@ -89,7 +94,7 @@ export const execute = (opts: ExecuteOptions) => {
             return buildPages({
               renderer: renderer({
                 template: template.toString(),
-                rendererPath: join(process.cwd(), ".sveet/server/ssr.js"),
+                rendererPath: join(process.cwd(), ".sveet/build/server/ssr.js"),
                 manifestPath: join(process.cwd(), ".sveet/manifest.json"),
                 clientPath: "/static/client.js"
               }),

@@ -50,7 +50,12 @@ export type ExecuteOptions = {
 };
 
 export const execute = (opts: ExecuteOptions) => {
-  return from(rm(join(process.cwd(), "build")))
+  return from(
+    Promise.all([
+      rm(join(process.cwd(), "build")),
+      rm(join(process.cwd(), ".sveet/build"))
+    ])
+  )
     .pipe(
       mergeMap(() => {
         const queryManager = new QueryManager();
@@ -76,7 +81,7 @@ export const execute = (opts: ExecuteOptions) => {
               },
               ssr: {
                 input: entries.ssr,
-                outputDir: join(process.cwd(), ".sveet/server")
+                outputDir: join(process.cwd(), ".sveet/build/server")
               }
             })
           ),
