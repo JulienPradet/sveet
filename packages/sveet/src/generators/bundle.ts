@@ -129,7 +129,17 @@ const makeSsrConfig = (
         preferBuiltins: true,
         extensions: [".mjs", ".js"]
       }),
-      commonjs()
+      commonjs(),
+      outputManifest({
+        fileName: "./ssr-manifest.json",
+        nameSuffix: ".js",
+        filter: chunk => true,
+        generate: (keyValueDecorator, seed) => {
+          return chunks => {
+            return Object.values(chunks).map(chunk => chunk.fileName);
+          };
+        }
+      })
     ]
   };
 };

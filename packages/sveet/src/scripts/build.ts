@@ -96,6 +96,10 @@ export const execute = (opts: ExecuteOptions) => {
                 template: template.toString(),
                 rendererPath: join(process.cwd(), ".sveet/build/server/ssr.js"),
                 manifestPath: join(process.cwd(), ".sveet/manifest.json"),
+                ssrManifestPath: join(
+                  process.cwd(),
+                  ".sveet/build/server/ssr-manifest.json"
+                ),
                 clientPath: "/static/client.js"
               }),
               ssrStaticClient: ssrStaticClient

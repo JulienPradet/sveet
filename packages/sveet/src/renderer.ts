@@ -1,3 +1,4 @@
+import { join, dirname } from "path";
 export type Manifest = object;
 export type Renderer = (props: object) => Promise<string>;
 
@@ -6,9 +7,16 @@ type RendererOptions = {
   rendererPath: string;
   clientPath: string;
   manifestPath: string;
+  ssrManifestPath: string;
 };
 
 export default (options: RendererOptions): Renderer => {
+  delete require.cache[require.resolve(options.ssrManifestPath)];
+  const ssrManifest: string[] = require(options.ssrManifestPath);
+  ssrManifest.forEach(path => {
+    delete require.cache[join(dirname(options.rendererPath), path)];
+  });
+
   delete require.cache[require.resolve(options.manifestPath)];
   const manifest = require(options.manifestPath);
 
