@@ -84,3 +84,9 @@ declare module "compression" {
 
   export default function<T = Request>(): RequestHandler<T>;
 }
+declare module "rollup-plugin-visualizer" {
+  import { Plugin } from "rollup";
+
+  export default function(options: { filename?: string }): Plugin;
+}
+

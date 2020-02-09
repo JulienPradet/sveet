@@ -10,11 +10,16 @@ import json from "rollup-plugin-json";
 import replace from "rollup-plugin-replace";
 import svelte from "rollup-plugin-svelte";
 import outputManifest from "rollup-plugin-output-manifest";
+import { terser } from "rollup-plugin-terser";
+import visualizer from "rollup-plugin-visualizer";
 import { Observable } from "rxjs";
 import { join, relative } from "path";
 import SveetQueryPreprocess from "../query/preprocess";
 import QueryManager from "../query/QueryManager";
 import { EventStatus } from "./EventStatus";
+import d from "debug";
+
+const debug = d("sveet:bundle");
 
 type ClientBundleOptions = {
   input: string;
@@ -40,12 +45,15 @@ const makeClientConfig = (
       dir: options.outputDir,
       format: "esm",
       sourcemap: true,
-      chunkFileNames: "[name].js"
+      chunkFileNames:
+        process.env.NODE_ENV === "development" ? "[name].js" : "[hash].js"
     },
     plugins: [
       replace({
         "process.browser": "true",
-        "process.env.NODE_ENV": JSON.stringify("development")
+        "process.env.NODE_ENV": JSON.stringify(
+          process.env.NODE_ENV || "development"
+        )
       }),
       svelte({
         hydratable: true,
@@ -58,8 +66,9 @@ const makeClientConfig = (
         extensions: [".mjs", ".js"]
       }),
       commonjs(),
+      process.env.NODE_ENV === "production" && terser(),
       outputManifest({
-        fileName: "../manifest.json",
+        fileName: "../../.sveet/manifest.json",
         nameSuffix: "",
         filter: chunk => Boolean(chunk.facadeModuleId),
         generate: (keyValueDecorator, seed) => {
@@ -76,8 +85,12 @@ const makeClientConfig = (
             }, {});
           };
         }
-      })
-    ]
+      }),
+      debug.enabled &&
+        visualizer({
+          filename: ".sveet/stats.html"
+        })
+    ].filter(Boolean)
   };
 };
 
@@ -90,7 +103,8 @@ const makeSsrConfig = (
     output: {
       dir: options.outputDir,
       format: "commonjs",
-      sourcemap: true
+      sourcemap: true,
+      chunkFileNames: "[name].js"
     },
     external: [
       ...Object.keys(require(join(process.cwd(), "package.json")).dependencies),
