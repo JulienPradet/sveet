@@ -55,6 +55,14 @@ export default [
     ["src/scripts/start.ts", "src/scripts/build.ts"],
     "dist/scripts"
   ),
-  makeClientConfig("src/DevClient.ts", "dist"),
-  makeClientConfig(["query.ts"], ".")
+  makeClientConfig(
+    [
+      "src/DevClient.ts",
+      "src/renderClient.ts",
+      "src/renderSsr.ts",
+      "src/router/router.ts",
+      "src/query/query.ts"
+    ],
+    "dist"
+  )
 ];

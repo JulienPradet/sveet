@@ -1,16 +1,16 @@
 import { RequestInfo, RequestInit, Response } from "node-fetch";
-import { SsrStaticClient, QueryFunction } from "./src/query/SsrStaticClient";
-import { Hash, Variables } from "./src/query/StaticClient";
+import { SsrStaticClient, QueryFunction } from "./SsrStaticClient";
+import { Hash, Variables } from "./StaticClient";
 import {
   getStaticClient as getGlobalStaticClient,
   setStaticClient as setGlobalStaticClient
-} from "./src/query/context";
-import { getStaticClient } from "./src/query/context";
+} from "./context";
+import { getStaticClient } from "./context";
 
-export { getStaticClient, setStaticClient } from "./src/query/context";
+export { getStaticClient, setStaticClient } from "./context";
 export { getGlobalStaticClient, setGlobalStaticClient };
-export { WebStaticClient } from "./src/query/WebStaticClient";
-export { staticQuery } from "./src/query/staticQuery";
+export { WebStaticClient } from "./WebStaticClient";
+export { staticQuery } from "./staticQuery";
 
 export const registerQuery = (hash: Hash, queryFunction: QueryFunction) => {
   const staticClient = getGlobalStaticClient() as SsrStaticClient;

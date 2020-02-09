@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "bin": "./sveet-cli",
   "scripts": {
-    "prebuild": "rm -rf dist query.d.ts, query.js*",
+    "prebuild": "rm -rf dist",
     "build": "rollup -c"
   },
   "dependencies": {

@@ -1,8 +1,7 @@
 <script>
   import { onMount } from "svelte";
-  import { listenNavigation } from "./src/router/history";
-  import { makeRouterStores } from "./src/router/routerStores";
-  import { setStaticClient } from "sveet/query";
+  import { listenNavigation, makeRouterStores } from "./router";
+  import { setStaticClient } from "./query";
 
   export let staticClient;
   export let initialPage;
@@ -10,11 +9,7 @@
 
   setStaticClient(staticClient);
 
-  let { route, page, location } = makeRouterStores(
-    routes,
-    staticClient,
-    initialPage
-  );
+  let { route, page, location } = makeRouterStores(routes, initialPage);
   $: props = $route.path.exec($page.pathname).groups;
 </script>
 

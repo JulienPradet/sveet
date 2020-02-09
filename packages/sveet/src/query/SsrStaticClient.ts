@@ -1,6 +1,7 @@
 import CacheClient from "./CacheClient";
 import { ReplaySubject } from "rxjs";
 import { StaticClient, Hash, Variables, Result } from "./StaticClient";
+import { Preload, PreloadType } from "../types";
 
 export type QueryFunction = (props: object) => Promise<Result>;
 
@@ -101,11 +102,11 @@ export class SsrStaticClient implements StaticClient {
     });
   }
 
-  getPreloads() {
+  getPreloads(): Preload[] {
     return Array.from(this.fetchedRequests).map(url => {
       return {
         href: url,
-        as: "fetch",
+        as: PreloadType.fetch,
         crossorigin: true
       };
     });
