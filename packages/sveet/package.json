@@ -20,7 +20,7 @@
     "@types/sade": "^1.6.0",
     "@types/serve-handler": "^6.1.0",
     "@types/trouter": "^3.1.0",
-    "acorn": "^7.1.0",
+    "acorn": "^7.1.1",
     "chokidar": "^3.3.1",
     "common-tags": "^1.8.0",
     "compression": "^1.7.4",
