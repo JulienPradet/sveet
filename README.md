@@ -26,6 +26,10 @@ The second reason is because building front-end tools is what I do for a living 
 - Gatsby
 - Eleventy
 
+## Related Projects
+
+- [Elder.js](https://github.com/elderjs/elderjs)
+
 ## Tools
 
 - Svelte
