@@ -2,7 +2,7 @@
   "name": "sveet-docs",
   "version": "0.0.0",
   "dependencies": {
-    "svelte": "^3.16.5",
+    "svelte": "^3.49.0",
     "sveet": "0.0.0"
   },
   "scripts": {
