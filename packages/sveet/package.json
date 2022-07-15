@@ -52,9 +52,9 @@
     "typescript": "^3.7.5"
   },
   "peerDependencies": {
-    "svelte": "^3.16.5"
+    "svelte": "^3.49.0"
   },
   "devDependencies": {
-    "svelte": "^3.16.5"
+    "svelte": "^3.49.0"
   }
 }
